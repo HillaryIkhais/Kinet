@@ -14,10 +14,9 @@ const INITIAL_STATE = {
 export const useStore = create((set, get) => ({
   worldState: { ...INITIAL_STATE },
   contract: DEFAULT_CONTRACT,
-  chat: [],
   sceneSpec: DEFAULT_CONTRACT.scene,
   receipts: [],
-  chat: [],
+  messages: [],
   apiKey: localStorage.getItem('kinet_key') || '',
   status: 'idle',
 
@@ -32,7 +31,13 @@ export const useStore = create((set, get) => ({
     set((s) => ({ worldState: { ...s.worldState, ...partial } })),
 
   regenerate: () => {
-    set({ contract: DEFAULT_CONTRACT, sceneSpec: DEFAULT_CONTRACT.scene, worldState: { ...INITIAL_STATE }, receipts: [], chat: [] });
+    set({
+      contract: DEFAULT_CONTRACT,
+      sceneSpec: DEFAULT_CONTRACT.scene,
+      worldState: { ...INITIAL_STATE },
+      receipts: [],
+      messages: [],
+    });
   },
 
   applyEdit: (kind) => {
@@ -64,8 +69,11 @@ export const useStore = create((set, get) => ({
     }));
   },
 
+  // Action: callable via getState().chat(message). Returns the runtime receipt.
+  // State field `messages` holds the rendered transcript; `chat` is the function.
   chat: async (message) => {
-    set({ chat: [...get().chat, { role: 'user', text: message }], status: 'thinking' });
+    const msgs = Array.isArray(get().messages) ? get().messages : [];
+    set({ messages: [...msgs, { role: 'user', text: message }], status: 'thinking' });
     const { action, target, reasoning, spoken, source } = await compileIntent(message, {
       worldState: get().worldState,
       contract: get().contract,
@@ -75,8 +83,8 @@ export const useStore = create((set, get) => ({
     set((s) => ({
       worldState: receipt.stateAfter,
       receipts: [receipt, ...s.receipts].slice(0, 50),
-      chat: [
-        ...s.chat,
+      messages: [
+        ...(Array.isArray(s.messages) ? s.messages : []),
         {
           role: 'ai',
           text: spoken || reasoning,

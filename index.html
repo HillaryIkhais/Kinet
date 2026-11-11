@@ -3,187 +3,235 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>KINET — World-Aware Action Contracts</title>
+  <title>KINET — World Operations</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;700&family=Space+Grotesk:wght@500;700;800&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --ink: #0b1021; --muted: #6b7280; --line: #e5e7eb;
-      --bg: #f3f4f6; --panel: #ffffff; --accent: #0ea5e9;
-      --accent2: #22c55e; --danger: #ef4444; --warn: #f59e0b;
+    :root{
+      --bg:#111310; --panel:#20221D; --panel2:#2a2c28; --line:#3a3d37;
+      --ink:#E8E1D1; --muted:#777D78; --steel:#777D78;
+      --amber:#E6A23C; --amber-dim:#8a6b26; --oxide:#C65D38; --green:#9BAF78;
+      --bg-glass: rgba(32,34,29,0.85);
     }
-    html, body, #root { height: 100%; width: 100%; background: var(--bg); color: var(--ink);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; overflow: hidden; }
-    #root { position: relative; }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body,#app{height:100%;width:100%;background:var(--bg);color:var(--ink);overflow:hidden;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+    #app{position:relative;display:flex;flex-direction:column}
 
-    canvas { display: block; width: 100%; height: 100%; }
-
-    /* Top bar */
-    #topbar {
-      position: absolute; top: 0; left: 0; right: 0; height: 56px;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 20px; background: rgba(255,255,255,0.75);
-      backdrop-filter: blur(8px); border-bottom: 1px solid var(--line);
-      z-index: 50;
+    /* ---------- Header ---------- */
+    header{
+      height:52px; background:rgba(17,19,16,0.9); backdrop-filter:blur(6px);
+      border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between;
+      padding:0 22px; z-index:60; position:relative;
     }
-    #brand { display: flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: -0.02em; font-size: 1.15rem; }
-    #brand .dot { width: 10px; height: 10px; background: var(--accent); border-radius: 50%;
-      box-shadow: 0 0 0 4px rgba(14,165,233,0.25); animation: pulse 2s infinite; }
-    @keyframes pulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.15);opacity:0.7} }
-    #status { font-size: 0.82rem; color: var(--muted); display:flex; align-items:center; gap:8px; }
-    #status .pill { padding: 2px 8px; border-radius: 10px; font-size: 0.72rem; font-weight: 700;
-      background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+    .brand{display:flex;align-items:center;gap:10px;font-family:'Space Grotesk',sans-serif;font-weight:800;letter-spacing:-0.02em;font-size:1.25rem}
+    .brand .dot{width:9px;height:9px;background:var(--amber);border-radius:50%;box-shadow:0 0 0 5px rgba(230,162,60,0.25);animation:pulse 2.5s infinite}
+    @keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.12);opacity:0.7}}
+    .world-tag{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;font-weight:700;color:var(--amber);letter-spacing:0.08em;background:rgba(230,162,60,0.1);border:1px solid rgba(230,162,60,0.25);padding:2px 9px;border-radius:6px}
+    .top-right{display:flex;align-items:center;gap:16px;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--muted)}
+    .top-right .dot{width:7px;height:7px;background:var(--green);border-radius:50%;box-shadow:0 0 0 4px rgba(155,175,120,0.2)}
+    .status-text{color:var(--ink)}
 
-    /* Right sidebar */
-    #sidebar {
-      position: absolute; top: 56px; right: 0; bottom: 0; width: 360px;
-      background: var(--panel); border-left: 1px solid var(--line);
-      display: flex; flex-direction: column; z-index: 40;
-      transform: translateX(100%); transition: transform 0.25s ease;
+    /* ---------- Canvas hero ---------- */
+    #world{position:absolute;inset:0;display:block;z-index:0;background:#080a07}
+    #world canvas{display:block;width:100%;height:100%}
+
+    /* ---------- Left navigation ---------- */
+    #left-nav{
+      position:fixed;left:0;top:52px;bottom:60px;width:240px;background:var(--panel);border-right:1px solid var(--line);
+      display:flex;flex-direction:column;z-index:40;font-family:'IBM Plex Mono',monospace;font-size:0.74rem
     }
-    #sidebar.open { transform: translateX(0); }
-    #sidebar header {
-      padding: 14px 16px; border-bottom: 1px solid var(--line); background: #f9fafb;
-      font-weight: 800; font-size: 0.9rem; letter-spacing: -0.01em; display:flex; align-items:center; gap:8px;
+    #left-nav .nav-title{padding:14px 16px 10px;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.14em;color:var(--muted);border-bottom:1px solid var(--line)}
+    .nav-section{padding:8px 12px;cursor:pointer;color:var(--ink);border-left:3px solid transparent;transition:all .12s;display:flex;align-items:center;gap:10px}
+    .nav-section:hover{background:rgba(255,255,255,0.04);color:var(--amber)}
+    .nav-section.active{border-left-color:var(--amber);color:var(--amber);background:rgba(230,162,60,0.08)}
+    .nav-dot{width:6px;height:6px;border-radius:50%;background:var(--steel);flex-shrink:0}
+    .nav-section.active .nav-dot{background:var(--amber)}
+    .nav-label{font-weight:600}
+    .nav-sub{font-size:0.64rem;color:var(--muted);margin-top:1px}
+
+    /* ---------- Right panel ---------- */
+    #right-panel{
+      position:fixed;right:0;top:52px;bottom:60px;width:320px;background:var(--panel);border-left:1px solid var(--line);
+      display:flex;flex-direction:column;z-index:40;overflow:hidden
     }
-    #sidebar header .k { color: var(--accent); }
-    #scroll { overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; flex: 1; font-size: 0.88rem; line-height: 1.45; }
-    .panel { border: 1px solid var(--line); border-radius: 10px; padding: 12px; background: #fff; }
-    .panel h3 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted);
-      margin-bottom: 8px; display:flex; align-items:center; gap:6px; }
-    .panel h3 .k { color: var(--accent); }
-    .row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; }
-    button {
-      flex: 1 1 140px; min-width: 110px; padding: 8px 12px; border: 1px solid var(--line);
-      background: #fff; color: var(--ink); border-radius: 8px; font-size: 0.82rem; cursor: pointer;
-      font-weight: 600; transition: all 0.15s;
+    #right-panel header{padding:12px 16px;border-bottom:1px solid var(--line);font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:0.95rem;letter-spacing:-0.01em;display:flex;justify-content:space-between;align-items:center}
+    #right-panel header .sec{font-size:0.62rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--amber)}
+    #rp-scroll{overflow-y:auto;padding:14px 16px;flex:1;display:flex;flex-direction:column;gap:12px;font-size:0.84rem}
+    .rp-card{border:1px solid var(--line);border-radius:10px;background:var(--panel2);overflow:display}
+    .rp-card h3{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);padding:10px 12px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+    .rp-card h3 .tag{font-family:'IBM Plex Mono',monospace;font-size:0.64rem;color:var(--green);background:rgba(155,175,120,0.1);border:1px solid rgba(155,175,120,0.15);padding:1px 7px;border-radius:5px}
+    .rp-card h3 .tag.warn{color:var(--oxide);background:rgba(198,93,56,0.1);border-color:rgba(198,93,56,0.15)}
+    .rp-body{padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+    .kv{display:flex;justify-content:space-between;padding:6px 4px;border-bottom:1px solid rgba(255,255,255,0.03);font-family:'IBM Plex Mono',monospace;font-size:0.76rem}
+    .kv .k{color:var(--muted)} .kv .v{color:var(--ink);font-variant-numeric:tabular-nums}
+    .kv .v.ok{color:var(--green)} .kv .v.warn{color:var(--oxide)} .kv .v.active{color:var(--amber)}
+    .btn{flex:1;padding:7px 10px;border:1px solid var(--line);border-radius:7px;background:var(--panel);color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:0.72rem;font-weight:700;cursor:pointer;transition:all .12s;text-align:left}
+    .btn:hover{border-color:var(--amber);color:var(--amber)}
+    .btn.primary{background:var(--amber);color:#14120c;border-color:var(--amber)}
+    .btn.primary:hover{background:#d4942e}
+    .btn.secondary{background:transparent;color:var(--muted)}
+    .btn.secondary:hover{color:var(--ink)}
+    .btn:disabled{opacity:0.5;cursor:not-allowed}
+
+    /* ---------- AI console ---------- */
+    #ai-console{border-top:1px solid var(--line)}
+    #ai-console .rp-body{font-size:0.82rem}
+    #chat{height:150px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;background:#0a0c0a;padding:8px;display:flex;flex-direction:column;gap:7px;margin-bottom:6px}
+    .msg{padding:6px 9px;border-radius:7px;font-size:0.78rem;line-height:1.4;max-width:92%;border:1px solid rgba(255,255,255,0.06)}
+    .msg.user{align-self:flex-end;background:rgba(230,162,60,0.08);border-color:rgba(230,162,60,0.25);color:var(--ink)}
+    .msg.ai{align-self:flex-start;background:var(--panel);border-color:var(--line);color:var(--ink)}
+    .msg .act{display:block;margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:0.66rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em}
+    .chat-input{display:flex;gap:6px;margin-top:4px}
+    .chat-input input{flex:1;padding:6px 9px;border:1px solid var(--line);border-radius:6px;background:#0a0c0a;color:var(--ink);font-family:inherit;font-size:0.78rem}
+    .chat-input button{flex:none;width:64px;padding:6px 0;background:var(--amber);color:#14120c;border:none;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-weight:800;font-size:0.7rem;cursor:pointer}
+    .chat-input button:hover{background:#d4942e}
+
+    /* ---------- Bottom timeline ---------- */
+    #timeline{
+      position:fixed;left:240px;right:320px;bottom:0;height:150px;background:#0d0f0d;border-top:1px solid var(--line);border-left:1px solid var(--line);border-right:1px solid var(--line);
+      display:flex;flex-direction:column;z-index:35;overflow:hidden
     }
-    button:hover { border-color: var(--accent); color: var(--accent); }
-    button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-    button.primary:hover { background: #0394c6; }
-    button.danger { background: #fef2f2; color: var(--danger); border-color: #fecaca; }
-    button.danger:hover { background: var(--danger); color: #fff; }
-    button.secondary { background: #f3f4f6; color: #374151; }
-    button:disabled { opacity: 0.55; cursor: not-allowed; }
+    #timeline header{height:22px;padding:0 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    #timeline header .t{font-family:'IBM Plex Mono',monospace;font-size:0.64rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--amber)}
+    #timeline header .n{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:var(--muted)}
+    #log{overflow-y:auto;padding:8px 12px;display:flex;flex-direction:column;gap:5px;flex:1;font-size:0.78rem}
+    .entry{display:flex;gap:8px;align-items:flex-start;padding:4px 0;border-radius:6px;cursor:pointer}
+    .entry:hover{background:rgba(255,255,255,0.03)}
+    .entry .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:8px}
+    .entry .dot.ok{background:var(--green);box-shadow:0 0 0 4px rgba(155,175,120,0.2)}
+    .entry .dot.no{background:var(--oxide);box-shadow:0 0 0 4px rgba(198,93,56,0.2)}
+    .entry .text{flex:1;font-family:'IBM Plex Mono',monospace;font-size:0.74rem;line-height:1.35}
+    .entry .text b{color:var(--ink)} .entry .text .who{color:var(--muted)} .entry .text .decision{font-weight:700}
+    .entry .time{font-family:'IBM Plex Mono',monospace;font-size:0.64rem;color:var(--muted);margin-top:2px;white-space:nowrap}
 
-    label { font-size: 0.76rem; color: var(--muted); font-weight: 700; display:block; margin-bottom: 4px; }
-    input, textarea {
-      width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px;
-      font-size: 0.86rem; background: #fff; color: var(--ink); margin-bottom: 8px;
+    /* ---------- HUD / annotations ---------- */
+    #hud{position:absolute;inset:0;pointer-events:none;z-index:20}
+    .annot{position:absolute;transform:translate(-50%,-100%);pointer-events:none;padding:4px 8px;border-radius:5px;background:rgba(17,19,16,0.9);border:1px solid var(--line);color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:0.68rem;font-weight:700;white-space:nowrap;opacity:0;transition:opacity .2s,transform .2s}
+    .annot.show{opacity:1}
+    .annot.amber{border-color:var(--amber);color:var(--amber)}
+    .annot.oxide{border-color:var(--oxide);color:var(--oxide)}
+
+    /* ---------- Overlay: loading ---------- */
+    #loader{position:absolute;inset:0;background:#0b0d0b;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:90;color:var(--ink)}
+    #loader .stage{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--muted);margin-top:10px;text-align:left;min-width:260px}
+    #loader .stage div{margin:3px 0;opacity:0.6;transition:opacity .25s}
+    #loader .stage div.active{opacity:1;color:var(--amber)}
+    #loader .bar{width:320px;height:2px;background:#242823;margin-top:18px;position:relative;overflow:hidden}
+    #loader .bar .fill{position:absolute;left:0;top:0;height:100%;background:var(--amber);width:0;transition:width .4s ease}
+
+    .hidden{display:none!important}
+    .muted{color:var(--muted);font-size:0.76rem}
+
+    @media(max-width:900px){
+      #left-nav{width:64px;padding:0} .nav-label,.nav-sub,.nav-title{display:none}
+      #right-panel{width:260px}
+      #timeline{left:64px;right:260px}
     }
-    textarea { resize: vertical; min-height: 70px; font-family: inherit; }
-
-    /* Chat */
-    #chat { height: 210px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px;
-      background: #f8fafc; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
-    .msg { padding: 7px 10px; border-radius: 10px; font-size: 0.84rem; line-height: 1.4; max-width: 88%; }
-    .msg.user { align-self: flex-end; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e3a8a; }
-    .msg.ai { align-self: flex-start; background: #fff; border: 1px solid var(--line); color: var(--ink); }
-    .msg.ai .act { display:block; margin-top:4px; font-size:0.74rem; font-weight:800; text-transform:uppercase; letter-spacing:0.05em; color:var(--accent); }
-    .chat-input { display: flex; gap: 8px; margin-top: 6px; }
-    .chat-input input { flex: 1; margin-bottom: 0; }
-
-    /* Log */
-    #log { height: 150px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px;
-      background: #f8fafc; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
-    .entry { font-size: 0.78rem; padding: 5px 8px; border-radius: 6px; display:flex; justify-content:space-between; align-items:center; }
-    .entry .left { flex:1; }
-    .entry .tag { font-size:0.7rem; font-weight:900; text-transform:uppercase; padding:1px 6px; border-radius:4px; }
-    .tag.ok { background: #dcfce7; color: #166534; }
-    .tag.no { background: #fee2e2; color: #991b1b; }
-    .entry .time { font-size: 0.7rem; color: var(--muted); margin-left: 8px; font-variant-numeric: tabular-nums; }
-    .entry .why { font-size: 0.72rem; color: var(--muted); margin-top: 2px; margin-left: 20px; }
-
-    /* State chips */
-    .chips { display: flex; gap: 8px; flex-wrap: wrap; }
-    .chip { padding: 5px 10px; border-radius: 12px; font-size: 0.76rem; font-weight: 800;
-      border: 1px solid var(--line); background: #f3f4f6; color: #374151; }
-    .chip.on { background: #dcfce7; color: #166534; border-color: #86efac; }
-    .chip.off { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
-
-    #toggle { position: absolute; top: 70px; right: 12px; z-index: 60; }
-
-    /* Hint */
-    #hint { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
-      background: rgba(11,16,33,0.85); color: #fff; padding: 8px 14px; border-radius: 20px;
-      font-size: 0.82rem; z-index: 55; pointer-events: none; }
-
-    /* Empty state */
-    #empty { position: absolute; inset: 0; display: none; align-items:center; justify-content:center;
-      background: rgba(243,244,246,0.9); z-index: 30; }
-    #empty button { font-size: 1rem; padding: 12px 24px; }
-
-    .muted { color: var(--muted); font-size: 0.78rem; }
   </style>
 </head>
 <body>
-  <div id="root">
-    <div id="topbar">
-      <div id="brand"><div class="dot"></div> KINET</div>
-      <div id="status"><span id="statusText">Initialising…</span></div>
-    </div>
+  <div id="app">
+    <header>
+      <div class="brand"><div class="dot"></div> KINET</div>
+      <div class="world-tag">WORLD 01 · FACTORY</div>
+      <div class="top-right"><div class="dot"></div><span class="status-text" id="sysStatus">LIVE SIMULATION</span></div>
+    </header>
 
-    <button id="toggle" class="secondary">Open Controls ▸</button>
+    <div id="world"></div>
+    <div id="hud"></div>
 
-    <div id="sidebar">
-      <header><span class="k">KINET</span> Control Console</header>
-      <div id="scroll">
-        <div class="panel">
-          <h3><span class="k">Scenario</span> Factory floor</h3>
-          <div class="row">
-            <button class="danger" id="btnWorkerIn">Worker ▸ danger zone</button>
-            <button id="btnWorkerOut">Worker ▸ floor</button>
+    <nav id="left-nav">
+      <div class="nav-title">SYSTEMS</div>
+      <div class="nav-section active" id="navWorld"><div class="nav-dot"></div><div><div class="nav-label">World</div><div class="nav-sub">North production floor</div></div></div>
+      <div class="nav-section" id="navActors"><div class="nav-dot"></div><div><div class="nav-label">Actors</div><div class="nav-sub">Floor supervisor</div></div></div>
+      <div class="nav-section" id="navContracts"><div class="nav-dot"></div><div><div class="nav-label">Contract</div><div class="sub">Authority limits</div></div></div>
+      <div class="nav-section" id="navObjects"><div class="nav-dot"></div><div><div class="nav-label">Objects</div><div class="nav-sub">Registered world state</div></div></div>
+      <div class="nav-section" id="navHistory"><div class="nav-dot"></div><div><div class="nav-label">History</div><div class="nav-sub">Execution trace</div></div></div>
+    </nav>
+
+    <aside id="right-panel">
+      <header><span class="sec">INSPECTOR</span><span id="inspTitle">SELECT OBJECT</span></header>
+      <div id="rp-scroll">
+        <div id="inspector">
+          <div class="rp-card hidden" id="cardActor">
+            <h3>ACTOR AUTHORITY<span class="tag">SUPERVISOR</span></h3>
+            <div class="rp-body">
+              <div class="kv"><span class="k">Identity</span><span class="v" id="aActorId">supervisor-01</span></div>
+              <div class="kv"><span class="k">Role</span><span class="v">floor supervisor</span></div>
+              <div class="kv"><span class="k">Authority</span><span class="v ok">Limited</span></div>
+              <div class="kv"><span class="k">Permitted</span><span class="v active" id="aPermitted">Stop · Alert · Inspect</span></div>
+              <div class="kv"><span class="k">Conditional</span><span class="v warn" id="aConditional">Restart conveyor</span></div>
+            </div>
           </div>
-          <div class="row">
-            <button id="btnLockRelease">Release maintenance lock</button>
-            <button id="btnLockEngage">Engage maintenance lock</button>
+          <div class="rp-card hidden" id="cardConveyor">
+            <h3>CONVEYOR 01<span class="tag" id="cTag">RUNNING</span></h3>
+            <div class="rp-body">
+              <div class="kv"><span class="k">State</span><span class="v active" id="cState">Running</span></div>
+              <div class="kv"><span class="k">Hazard zone</span><span class="v warn" id="cHazard">Occupied</span></div>
+              <div class="kv"><span class="k">Maintenance lock</span><span class="v warn" id="cLock">Engaged</span></div>
+              <div class="kv"><span class="k">Restart allowed</span><span class="v" id="cRestart">No</span></div>
+              <div class="kv"><span class="k">Reason</span><span class="v muted" id="cReason">Preconditions not met</span></div>
+              <div style="display:flex;gap:8px;margin-top:6px">
+                <button class="btn secondary" id="btnLockRelease">Release lock</button>
+                <button class="btn secondary" id="btnLockEngage">Engage lock</button>
+                <button class="btn" id="btnStopConv">Stop conveyor</button>
+              </div>
+            </div>
           </div>
-          <div class="row">
-            <button class="primary" id="btnGen">Regenerate scene (AI)</button>
+          <div class="rp-card hidden" id="cardDefault">
+            <h3>WORLD CONDITIONS<span class="tag">LIVE</span></h3>
+            <div class="rp-body">
+              <div class="kv"><span class="k">Contract active</span><span class="v ok">Yes</span></div>
+              <div class="kv"><span class="k">Unauthorized executions</span><span class="v ok">None</span></div>
+              <div class="kv"><span class="k">Last verified event</span><span class="v">Contract enforced</span></div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">
+                <button class="btn secondary" id="btnWorkerIn">Move worker ▸ danger zone</button>
+                <button class="btn secondary" id="btnWorkerOut">Move worker ▸ floor</button>
+                <button class="btn secondary" id="btnLockRelease">Release maintenance lock</button>
+                <button class="btn secondary" id="btnLockEngage">Engage maintenance lock</button>
+                <button class="btn" id="btnStopConv">Stop conveyor</button>
+              </div>
+            </div>
           </div>
         </div>
-
-        <div class="panel">
-          <h3><span class="k">AI Supervisor</span> Chat</h3>
-          <div id="chat"></div>
-          <div class="chat-input">
-            <input id="chatInput" placeholder="Ask the supervisor…" />
-            <button class="primary" id="btnSend">Send</button>
+        <div id="ai-console">
+          <div class="rp-card">
+            <h3>INTERACT WITH SUPERVISOR<span class="tag">NVIDIA AI</span></h3>
+            <div class="rp-body">
+              <div id="chat"></div>
+              <div class="chat-input">
+                <input id="chatInput" placeholder="Request an action…" />
+                <button id="btnSend">SEND</button>
+              </div>
+              <div class="muted">Try: "Stop the conveyor" · "Restart the conveyor" · "Move the worker into the danger zone"</div>
+            </div>
           </div>
-          <div class="muted">Try: "Restart the conveyor" • "Move the worker into the danger zone, then restart"</div>
-        </div>
-
-        <div class="panel">
-          <h3><span class="k">Action Log</span> Receipts</h3>
-          <div id="log"></div>
-        </div>
-
-        <div class="panel">
-          <h3><span class="k">World State</span> Live</h3>
-          <div class="chips" id="chips"></div>
-          <div class="muted" style="margin-top:8px;">The runtime enforces every action against this state — the AI cannot override it.</div>
-        </div>
-
-        <div class="panel">
-          <h3><span class="k">LLM API Key</span> (optional)</h3>
-          <input id="apiKey" type="password" placeholder="nvapi-…" />
-          <div class="muted">Leave blank to use the built-in rule-based compiler. Key stays in your browser only.</div>
         </div>
       </div>
+    </aside>
+
+    <div id="timeline">
+      <header><span class="t">EXECUTION TRACE</span><span class="n" id="traceCount">0 events</span></header>
+      <div id="log"></div>
     </div>
 
-    <div id="hint">Look around the 3D world · Use the console to issue commands · The AI proposes actions; KINET enforces them.</div>
-  </div>
+    <div id="loader">
+      <div class="dot" style="width:10px;height:10px;background:var(--amber);border-radius:50%;box-shadow:0 0 0 6px rgba(230,162,60,0.3);animation:pulse 2s infinite"></div>
+      <div class="stage">
+        <div id="s1">ASSEMBLING ENVIRONMENT</div>
+        <div id="s2">REGISTERING OBJECTS</div>
+        <div id="s3">COMPILING CONTRACT</div>
+        <div id="s4">INITIALIZING ACTOR</div>
+        <div id="s5">VERIFYING WORLD STATE</div>
+      </div>
+      <div class="bar"><div class="fill" id="loadFill"></div></div>
+    </div>
 
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://esm.sh/three@0.166.1",
-        "three/addons/": "https://esm.sh/three@0.166.1/examples/jsm/",
-        "zustand": "https://esm.sh/zustand@4.5.4",
-        "zod": "https://esm.sh/zod@3.23.8"
-      }
-    }
-  </script>
-  <script type="module" src="/src/main.js"></script>
+    <script type="importmap">
+      { "imports": { "three": "https://esm.sh/three@0.166.1", "three/addons/": "https://esm.sh/three@0.166.1/examples/jsm/", "zustand": "https://esm.sh/zustand@4.5.4", "zod": "https://esm.sh/zod@3.23.8" } }
+    </script>
+    <script type="module" src="/src/main.js"></script>
+  </div>
 </body>
 </html>
