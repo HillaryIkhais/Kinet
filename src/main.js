@@ -12,7 +12,7 @@ canvas.style.display = 'block';
 document.getElementById('world').appendChild(canvas);
 
 const store = useStore;
-const scene = new FactoryScene(canvas);
+let scene = null;
 
 // ---- DOM refs ----
 const els = {
@@ -37,11 +37,11 @@ const els = {
   cTag: document.getElementById('cTag'), cState: document.getElementById('cState'),
   cHazard: document.getElementById('cHazard'), cLock: document.getElementById('cLock'),
   cRestart: document.getElementById('cRestart'), cReason: document.getElementById('cReason'),
-  btnLockRelease: document.getElementById('btnLockRelease'),
-  btnLockEngage: document.getElementById('btnLockEngage'),
-  btnStopConv: document.getElementById('btnStopConv'),
+  btnLockReleaseWorld: document.getElementById('btnLockReleaseWorld'),
+  btnLockEngageWorld: document.getElementById('btnLockEngageWorld'),
   btnWorkerIn: document.getElementById('btnWorkerIn'),
   btnWorkerOut: document.getElementById('btnWorkerOut'),
+  btnStopConvWorld: document.getElementById('btnStopConvWorld'),
   // nav
   navWorld: document.getElementById('navWorld'), navActors: document.getElementById('navActors'),
   navContracts: document.getElementById('navContracts'), navObjects: document.getElementById('navObjects'),
@@ -54,7 +54,7 @@ let frame = null, last = performance.now();
 let loadResolve;
 const loadPromise = new Promise((r) => { loadResolve = r; });
 
-// ---- Loading sequence (real work mapped to stages) ----
+// ---- Loading sequence ----
 const STAGES = ['s1', 's2', 's3', 's4', 's5'];
 let stageIdx = 0;
 function advanceStage() {
@@ -271,20 +271,31 @@ function loop(now) {
   const dt = (now - last) / 1000;
   last = now;
   const s = store.getState();
-  scene.update(dt, s.worldState);
-  scene.render();
+  if (scene) {
+    scene.update(dt, s.worldState);
+    scene.render();
+  }
   render();
   frame = requestAnimationFrame(loop);
 }
 
 // ---- Boot ----
+function initScene() {
+  try {
+    scene = new FactoryScene(canvas);
+    return true;
+  } catch (e) {
+    console.error('Scene init failed:', e);
+    return false;
+  }
+}
+
 function boot() {
   try {
     last = performance.now();
     frame = requestAnimationFrame((t) => { last = t; loop(t); });
   } catch (e) {
     console.error('Boot failed:', e);
-    // Still try to render something so the page isn't blank
     last = performance.now();
     frame = requestAnimationFrame((t) => { last = t; loop(t); });
   }
@@ -294,6 +305,7 @@ advanceStage();
 // Hard stop: loader always comes off after ~2.5s even if JS errors
 setTimeout(() => {
   els.loader.classList.add('hidden');
+  if (!scene) initScene();
   boot();
 }, 2700);
 
