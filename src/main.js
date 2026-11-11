@@ -333,6 +333,7 @@ function loop(now) {
 function initScene() {
   try {
     scene = new ArchiveScene(canvas);
+    window.__kinetScene = scene;
     return true;
   } catch (e) {
     console.error('Scene init failed:', e);
@@ -366,4 +367,4 @@ setTimeout(() => {
 
 // expose for console debugging
 window.__kinetStore = store;
-window.__kinetScene = scene;
+window.__kinetSceneGetter = () => scene;
