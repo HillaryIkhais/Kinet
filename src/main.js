@@ -13,6 +13,7 @@ document.getElementById('world').appendChild(canvas);
 
 const store = useStore;
 let scene = null;
+let frame = null, last = performance.now();
 
 // ---- DOM refs ----
 const els = {
@@ -316,7 +317,6 @@ function appendChat(role, receipt, userText) {
 }
 
 // ---- Animation loop ----
-let frame = null, last = performance.now();
 function loop(now) {
   const dt = (now - last) / 1000;
   last = now;
