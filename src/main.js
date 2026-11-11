@@ -71,29 +71,53 @@ function setMode(mode) {
   const charsEditor = document.getElementById('chars-editor');
   const inspector = document.getElementById('inspector');
   const aiConsole = document.getElementById('ai-console');
+  const trace = document.getElementById('trace');
+  const worldTag = document.querySelector('.world-tag');
+  const modeBar = document.getElementById('mode-bar');
+  const leftNav = document.getElementById('left-nav');
+  const ret = document.getElementById('returnToStudio');
   if (mode === 'logic') {
     logicEditor.classList.remove('hidden');
     charsEditor.classList.add('hidden');
     inspector.classList.add('hidden');
     aiConsole.classList.add('hidden');
+    trace.classList.add('hidden');
+    worldTag.classList.add('hidden');
+    modeBar.classList.add('hidden');
+    leftNav.classList.add('hidden');
+    ret.classList.add('hidden');
     renderLogicGraph();
   } else if (mode === 'chars') {
     logicEditor.classList.add('hidden');
     charsEditor.classList.remove('hidden');
     inspector.classList.add('hidden');
     aiConsole.classList.add('hidden');
+    trace.classList.add('hidden');
+    worldTag.classList.add('hidden');
+    modeBar.classList.add('hidden');
+    leftNav.classList.add('hidden');
+    ret.classList.add('hidden');
   } else if (mode === 'play') {
     logicEditor.classList.add('hidden');
     charsEditor.classList.add('hidden');
     inspector.classList.add('hidden');
     aiConsole.classList.add('hidden');
-    inspector.style.opacity = '0';
-    aiConsole.style.opacity = '0';
+    trace.classList.add('hidden');
+    worldTag.classList.add('hidden');
+    modeBar.classList.add('hidden');
+    leftNav.classList.add('hidden');
+    ret.classList.remove('hidden');
+    ret.style.opacity = '1';
   } else {
     logicEditor.classList.add('hidden');
     charsEditor.classList.add('hidden');
     inspector.classList.remove('hidden');
     aiConsole.classList.remove('hidden');
+    trace.classList.remove('hidden');
+    worldTag.classList.remove('hidden');
+    modeBar.classList.remove('hidden');
+    leftNav.classList.remove('hidden');
+    ret.classList.add('hidden');
     inspector.style.opacity = '1';
     aiConsole.style.opacity = '1';
   }
@@ -495,6 +519,27 @@ els.modePlay.onclick = () => setMode('play');
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && currentMode === 'play') setMode('world');
 });
+
+document.getElementById('returnToStudio').onclick = () => setMode('world');
+
+// World prompt input (natural-language generation)
+els.worldPrompt = document.getElementById('worldPrompt');
+els.worldPrompt.onkeydown = async (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const text = els.worldPrompt.value.trim();
+    if (!text) return;
+    appendChat('user', text);
+    try {
+      const receipt = await store.getState().chat(text);
+      appendChat('ai', receipt, text);
+      els.worldPrompt.value = '';
+      renderLogicGraph();
+    } catch (err) {
+      appendChat('ai', { text: 'Archivist unavailable. Fallback compiled locally.', action: null, target: null, allowed: false, reason: err.message, source: 'error' });
+    }
+  }
+};
 
 // Boot after loader timeout (loader starts during creation canvas)
 advanceStage();

@@ -68,6 +68,12 @@
     .nav-label{font-weight:600;font-size:0.78rem}
     .nav-sub{font-size:0.64rem;color:var(--muted);margin-top:1px}
 
+    .prompt-card .world-prompt-input{
+      width:100%;padding:9px 12px;border:1px solid var(--line-dim);border-radius:7px;background:rgba(4,12,15,0.4);color:var(--ink);font-family:'Space Grotesk',sans-serif;font-size:0.8rem;font-weight:500
+    }
+    .prompt-card .world-prompt-input::placeholder{color:var(--muted)}
+    .prompt-card .world-prompt-input:focus{outline:none;border-color:var(--copper)}
+
     /* ---------- Right panel ---------- */
     #right-panel{
       position:fixed;right:0;top:60px;bottom:64px;width:340px;background:var(--panel);backdrop-filter:blur(8px);
@@ -186,7 +192,11 @@
     </div>
 
     <nav id="left-nav">
-      <div class="nav-title">WORLD OBJECTS</div>
+      <div class="nav-title">WORLD COMPOSITION</div>
+      <div class="prompt-card" style="padding:12px 20px;margin-bottom:10px;border-bottom:1px solid var(--line-dim)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:0.58rem;text-transform:uppercase;letter-spacing:0.14em;color:var(--muted);margin-bottom:6px">Natural-language prompt</div>
+        <input type="text" id="worldPrompt" class="world-prompt-input" placeholder="Describe the world you want to build…" />
+      </div>
       <div class="nav-section active" id="navRelay1"><div class="nav-dot"></div><div><div class="nav-label">Memory Relay 01</div><div class="nav-sub">Damaged</div></div></div>
       <div class="nav-section" id="navRelay2"><div class="nav-dot"></div><div><div class="nav-label">Memory Relay 02</div><div class="nav-sub">Damaged</div></div></div>
       <div class="nav-section" id="navRelay3"><div class="nav-dot"></div><div><div class="nav-label">Memory Relay 03</div><div class="nav-sub">Damaged</div></div></div>
@@ -301,6 +311,8 @@
       <div class="create-btn" id="btnCreate">CREATE WORLD</div>
       <div class="create-hint">KINET compiles your description into an interactive 3D world with enforceable rules.</div>
     </div>
+
+    <button id="returnToStudio" class="btn primary" style="position:fixed;right:28px;bottom:76px;z-index:55;display:none">RETURN TO STUDIO</button>
 
     <div id="loader">
       <div class="core"></div>
