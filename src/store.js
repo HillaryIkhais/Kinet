@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { DEFAULT_ARCHIVE_CONTRACT } from './archive.js';
-import { enforce, validatePlayability } from './runtime.js';
+import { enforce, commitChangeSet, validatePlayability } from './runtime.js';
 import { compileIntent } from './llm.js';
 
 // Build initial object placement from contract scene objects (zone property).
@@ -17,7 +17,13 @@ const INITIAL_STATE = {
   conduit01Active: false,
   conduit02Active: false,
   conduit03Active: false,
+  lowerEntranceSealed: false,
+  floodActive: false,
+  bridgeRaised: false,
+  observatoryOpen: false,
+  archivistRerouted: false,
   objectPlacement: { ...initialPlacement },
+  worldVersion: 1,
 };
 
 export const useStore = create((set, get) => ({
@@ -29,6 +35,7 @@ export const useStore = create((set, get) => ({
   apiKey: localStorage.getItem('kinet_key') || '',
   status: 'idle',
   playability: null,
+  undo: null,
 
   setApiKey: (k) => {
     localStorage.setItem('kinet_key', k || '');
@@ -48,6 +55,7 @@ export const useStore = create((set, get) => ({
       receipts: [],
       messages: [],
       playability: null,
+      undo: null,
     });
   },
 
@@ -88,40 +96,143 @@ export const useStore = create((set, get) => ({
         ...st.receipts,
       ].slice(0, 50),
     }));
-    // Re-evaluate playability after any edit.
     const ns = get();
     set({ playability: validatePlayability(ns.worldState, ns.contract) });
   },
 
-  chat: async (message) => {
-    const msgs = Array.isArray(get().messages) ? get().messages : [];
-    set({ messages: [...msgs, { role: 'user', text: message }], status: 'thinking' });
-    const { action, target, reasoning, spoken, source } = await compileIntent(message, {
-      worldState: get().worldState,
-      contract: get().contract,
-      apiKey: get().apiKey,
+  // Coordinated world-change: one instruction → change-set → validate → commit/reject.
+  direct: async (instruction) => {
+    const s = get();
+    const before = { ...s.worldState };
+
+    // Undo snapshot.
+    set({ undo: { state: before, version: s.worldState.worldVersion } });
+
+    // 1. Interpret instruction → structured change-set.
+    const { changeSet, spoken, source } = await compileChangeSet(instruction, {
+      worldState: s.worldState,
+      contract: s.contract,
+      apiKey: s.apiKey,
     });
-    const receipt = enforce(action, target, get().worldState, get().contract);
-    set((s) => ({
-      worldState: receipt.stateAfter,
-      receipts: [receipt, ...s.receipts].slice(0, 50),
-      messages: [
-        ...(Array.isArray(s.messages) ? s.messages : []),
-        {
-          role: 'ai',
-          text: spoken || reasoning,
-          action,
-          target,
-          allowed: receipt.allowed,
-          reason: receipt.reason,
-          source,
-        },
-      ],
-      status: 'idle',
-    }));
-    // Re-evaluate playability after any AI action too.
-    const ns = get();
-    set({ playability: validatePlayability(ns.worldState, ns.contract) });
+
+    // 2. Validate + atomically commit.
+    const result = commitChangeSet(s.worldState, s.contract, changeSet);
+
+    const receipt = {
+      id: Date.now().toString(),
+      ts: Date.now(),
+      actor: 'creator',
+      action: 'direct',
+      target: 'world',
+      allowed: result.committed,
+      reason: result.reason,
+      stateBefore: before,
+      stateAfter: result.committed ? result.worldState : before,
+      changeSet,
+      validation: result.validation,
+    };
+
+    if (result.committed) {
+      set((st) => ({
+        worldState: result.worldState,
+        receipts: [receipt, ...st.receipts].slice(0, 50),
+        messages: [
+          ...(Array.isArray(st.messages) ? st.messages : []),
+          { role: 'ai', text: spoken || reason, action: 'direct', target: 'world', allowed: true, reason: result.reason, source },
+        ],
+        status: 'idle',
+        playability: validatePlayability(result.worldState, s.contract),
+        undo: null,
+      }));
+    } else {
+      // Rejection: restore pre-change state, undo no longer valid.
+      set((st) => ({
+        worldState: before,
+        receipts: [receipt, ...st.receipts].slice(0, 50),
+        messages: [
+          ...(Array.isArray(st.messages) ? st.messages : []),
+          { role: 'ai', text: spoken || result.reason, action: 'direct', target: 'world', allowed: false, reason: result.reason, source },
+        ],
+        status: 'idle',
+        playability: validatePlayability(before, s.contract),
+        undo: null,
+      }));
+    }
     return receipt;
+  },
+
+  // Coordinated world-change: commit a prepared change-set atomically.
+  commitChange: (changeSet) => {
+    const s = get();
+    const before = { ...s.worldState };
+    set({ undo: { state: before, version: s.worldState.worldVersion } });
+
+    const result = commitChangeSet(s.worldState, s.contract, changeSet);
+    const receipt = {
+      id: Date.now().toString(),
+      ts: Date.now(),
+      actor: 'creator',
+      action: 'direct',
+      target: 'world',
+      allowed: result.committed,
+      reason: result.reason,
+      stateBefore: before,
+      stateAfter: result.committed ? result.worldState : before,
+      changeSet,
+      validation: result.validation,
+    };
+
+    if (result.committed) {
+      set((st) => ({
+        worldState: result.worldState,
+        receipts: [receipt, ...st.receipts].slice(0, 50),
+        messages: [
+          ...(Array.isArray(st.messages) ? st.messages : []),
+          { role: 'ai', text: result.reason, action: 'direct', target: 'world', allowed: true, reason: result.reason, source: changeSet.source || 'direct' },
+        ],
+        status: 'idle',
+        playability: validatePlayability(result.worldState, s.contract),
+        undo: null,
+      }));
+    } else {
+      set((st) => ({
+        worldState: before,
+        receipts: [receipt, ...st.receipts].slice(0, 50),
+        messages: [
+          ...(Array.isArray(st.messages) ? st.messages : []),
+          { role: 'ai', text: result.reason, action: 'direct', target: 'world', allowed: false, reason: result.reason, source: changeSet.source || 'direct' },
+        ],
+        status: 'idle',
+        playability: validatePlayability(before, s.contract),
+        undo: null,
+      }));
+    }
+    return receipt;
+  },
+
+  undoChange: () => {
+    const s = get();
+    if (!s.undo) return null;
+    set((st) => ({
+      worldState: { ...s.undo.state },
+      worldVersion: s.undo.version,
+      receipts: [
+        {
+          id: Date.now().toString(),
+          ts: Date.now(),
+          actor: 'system',
+          action: 'undo',
+          target: 'world',
+          allowed: true,
+          reason: 'Reverted last coordinated change.',
+          stateBefore: st.worldState,
+          stateAfter: { ...s.undo.state },
+        },
+        ...st.receipts,
+      ].slice(0, 50),
+      playability: validatePlayability(s.undo.state, s.contract),
+      undo: null,
+    }));
+    return s.undo;
   },
 }));

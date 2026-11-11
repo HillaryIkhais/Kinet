@@ -45,6 +45,10 @@ export const DEFAULT_ARCHIVE_CONTRACT = ArchiveContractSchema.parse({
     { action: 'activate_conduit_03', conditions: ['relay_03_restored'], resourceScope: ['energy_conduit_03'] },
     { action: 'archivist_investigate', conditions: [], resourceScope: ['archivist'] },
     { action: 'seal_chamber', conditions: ['chamber_open'], resourceScope: ['central_chamber'] },
+    { action: 'seal_lower_entrance', conditions: [], resourceScope: ['lower_entrance'] },
+    { action: 'flood_lower_level', conditions: ['lowerEntranceSealed'], resourceScope: ['lower_level'] },
+    { action: 'relocate_final_relay', conditions: [], resourceScope: ['memory_relay_03'] },
+    { action: 'reroute_archivist', conditions: [], resourceScope: ['archivist'] },
   ],
   scene: {
     objects: [
@@ -56,6 +60,8 @@ export const DEFAULT_ARCHIVE_CONTRACT = ArchiveContractSchema.parse({
       { id: 'energy_conduit_02', type: 'conduit', position: [0, 0.4, -2], properties: { active: false }, zone: 'main_hall' },
       { id: 'energy_conduit_03', type: 'conduit', position: [6.5, 0.4, -2], properties: { active: false }, zone: 'main_hall' },
       { id: 'central_chamber', type: 'chamber', position: [0, 1.6, 0], properties: { sealed: true }, zone: 'central_chamber' },
+      { id: 'lower_entrance', type: 'entrance', position: [-6.5, 0.4, 5], properties: { sealed: false }, zone: 'main_hall' },
+      { id: 'observatory', type: 'room', position: [6.5, 1.2, 5], properties: { sealed: true }, zone: 'observatory' },
       { id: 'archivist', type: 'archivist', position: [0, 0.85, 4.5], properties: {}, zone: 'main_hall' },
       { id: 'memory_chamber', type: 'chamber', position: [0, 0, 6], properties: { sealed: true }, zone: 'main_hall' },
       { id: 'wall_back', type: 'wall', position: [0, 2.5, -9], properties: { size: [20, 5, 0.6] }, zone: 'main_hall' },
@@ -65,6 +71,7 @@ export const DEFAULT_ARCHIVE_CONTRACT = ArchiveContractSchema.parse({
   },
   zoneLocks: {
     central_chamber: 'all_relays_restored',
+    observatory: 'archive_flooded',
   },
   objectives: [
     {

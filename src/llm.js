@@ -108,3 +108,113 @@ export async function compileIntent(prompt, { worldState, contract, apiKey }) {
   }
   return fallback(prompt);
 }
+
+const CHANGE_SYSTEM = (contract, worldState) => `You are KINET's world-change director for world ${contract.worldId}.
+You translate a creator's natural-language instruction into a structured world change-set.
+You do NOT execute anything — the runtime validates and commits the change-set.
+
+Current world state: ${JSON.stringify(worldState)}.
+
+Supported change types:
+- { type: 'setCondition', condition: 'lowerEntranceSealed', value: true }  — seal the lower entrance
+- { type: 'setCondition', condition: 'floodActive', value: true }          — activate the flood
+- { type: 'setCondition', condition: 'bridgeRaised', value: true }         — raise the observatory bridge
+- { type: 'relocateObject', targetId: 'memory_relay_03', zone: 'observatory' }  — move relay 03
+- { type: 'setCondition', condition: 'archivistRerouted', value: true }    — reroute archivist
+
+Rules:
+- If the instruction mentions flooding/sealing lower entrance, include setCondition lowerEntranceSealed=true AND floodActive=true.
+- If it mentions raising the bridge to the observatory, include setCondition bridgeRaised=true.
+- If it mentions moving the final relay to the observatory, include relocateObject memory_relay_03 → observatory.
+- If it mentions sending/rerouting the archivist, include setCondition archivistRerouted=true.
+- preservedProgress must list objectives already complete (e.g. ["memory_relay_01", "memory_relay_02"]).
+- affectedObjectives must list objectives impacted (e.g. ["open_final_chamber"]).
+- baseWorldVersion is the current world version number.
+
+Reply ONLY with JSON in a markdown code block:
+{
+  "id": "change-1",
+  "baseWorldVersion": 1,
+  "summary": "One sentence summary of the change.",
+  "changes": [ ... ],
+  "preservedProgress": [ ... ],
+  "affectedObjectives": [ ... ],
+  "spoken": "what you say aloud to the creator (short, in character)"
+}`;
+
+function fallbackChangeSet(prompt, { worldState }) {
+  const p = prompt.toLowerCase();
+  const changes = [];
+  const preserved = [];
+  const affected = ['open_final_chamber'];
+  let spoken = '';
+
+  const wantsFlood = /flood|seal.*lower|lower.*entrance/.test(p);
+  const wantsBridge = /bridge|observatory/.test(p);
+  const wantsRelay = /relay.*0?3|final relay/.test(p);
+  const wantsArchivist = /archivist/.test(p);
+
+  if (wantsFlood) {
+    changes.push({ type: 'setCondition', condition: 'lowerEntranceSealed', value: true });
+    changes.push({ type: 'setCondition', condition: 'floodActive', value: true });
+  }
+  if (wantsBridge) changes.push({ type: 'setCondition', condition: 'bridgeRaised', value: true });
+  if (wantsRelay) changes.push({ type: 'relocateObject', targetId: 'memory_relay_03', zone: 'observatory' });
+  if (wantsArchivist) changes.push({ type: 'setCondition', condition: 'archivistRerouted', value: true });
+
+  if (worldState.relay01Restored) preserved.push('memory_relay_01');
+  if (worldState.relay02Restored) preserved.push('memory_relay_02');
+
+  if (changes.length === 0) {
+    spoken = "I didn't recognise that world change. Try: 'The archive is flooding. Seal the lower entrance, raise the bridge to the observatory, move the final memory relay there and send the archivist to guide the visitors.'";
+    return { changeSet: null, spoken, source: 'fallback' };
+  }
+
+  spoken = "I'll coordinate that change across the environment, objects, routes and archivist while preserving your completed progress.";
+  return {
+    changeSet: {
+      id: 'change-' + Date.now(),
+      baseWorldVersion: worldState.worldVersion || 1,
+      summary: changes.map((c) => c.condition || c.targetId).join(' + ') + ' coordinated change.',
+      changes,
+      preservedProgress: preserved,
+      affectedObjectives: affected,
+    },
+    spoken,
+    source: 'fallback',
+  };
+}
+
+export async function compileChangeSet(prompt, { worldState, contract, apiKey }) {
+  if (apiKey && apiKey.startsWith('nvapi-')) {
+    try {
+      const res = await fetch(ENDPOINT, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'meta/llama-3.1-8b-instruct',
+          temperature: 0.2,
+          max_tokens: 500,
+          messages: [
+            { role: 'system', content: CHANGE_SYSTEM(contract, worldState) },
+            { role: 'user', content: prompt },
+          ],
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const text = data.choices?.[0]?.message?.content || '';
+        const parsed = extractJSON(text);
+        if (parsed && parsed.changes) {
+          return { changeSet: parsed, spoken: parsed.spoken, source: 'llm' };
+        }
+      }
+    } catch (e) {
+      // fall through to fallback
+    }
+  }
+  return fallbackChangeSet(prompt, { worldState });
+}

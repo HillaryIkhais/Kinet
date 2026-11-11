@@ -1,7 +1,7 @@
 import { ArchiveScene } from './scene.js';
 import { useStore } from './store.js';
-import { compileIntent } from './llm.js';
-import { enforce } from './runtime.js';
+import { compileIntent, compileChangeSet } from './llm.js';
+import { enforce, commitChangeSet } from './runtime.js';
 
 const app = document.getElementById('app');
 const canvas = document.createElement('canvas');
@@ -40,6 +40,13 @@ const els = {
   cId: document.getElementById('cId'), cState: document.getElementById('cState'),
   cCondition: document.getElementById('cCondition'), cProgress: document.getElementById('cProgress'),
   aPermitted: document.getElementById('aPermitted'), aConditional: document.getElementById('aConditional'),
+  // direct instruction
+  directInput: document.getElementById('directInput'),
+  directBtn: document.getElementById('directBtn'),
+  directPreview: document.getElementById('directPreview'),
+  directApply: document.getElementById('directApply'),
+  directDiscard: document.getElementById('directDiscard'),
+  directUndo: document.getElementById('directUndo'),
   // nav
   navRelay1: document.getElementById('navRelay1'), navRelay2: document.getElementById('navRelay2'),
   navRelay3: document.getElementById('navRelay3'), navChamber: document.getElementById('navChamber'),
@@ -442,6 +449,8 @@ function selectObject(id) {
   }
 }
 
+renderDirectPreview();
+
 // ---- Actions ----
 function restoreRelay(idx) {
   store.applyEdit(`relay_0${idx}_in`);
@@ -478,6 +487,67 @@ async function send() {
 }
 els.btnSend.onclick = send;
 els.chatInput.onkeydown = (e) => { if (e.key === 'Enter') send(); };
+
+// ---- Coordinated world-change ----
+let directPending = null; // { changeSet, spoken, source }
+
+function renderDirectPreview() {
+  const preview = els.directPreview;
+  if (!directPending) {
+    preview.style.display = 'none';
+    return;
+  }
+  const { changeSet, spoken, source } = directPending;
+  const changes = changeSet.changes || [];
+  const labels = {
+    setCondition: (c) => `Set ${c.condition} = ${c.value}`,
+    relocateObject: (c) => `Move ${c.targetId} → ${c.zone}`,
+  };
+  preview.style.display = 'block';
+  preview.innerHTML = `
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:0.66rem;color:var(--copper);margin-bottom:4px">PROPOSED CHANGE-SET</div>
+    <div style="font-size:0.8rem;margin-bottom:6px">${spoken}</div>
+    <div style="margin-bottom:6px">${changes.map((c, i) => `<div style="margin:2px 0;padding:3px 6px;background:rgba(184,121,85,0.08);border-left:3px solid var(--copper);border-radius:4px;font-size:0.7rem">${labels[c.type] ? labels[c.type](c) : JSON.stringify(c)}</div>`).join('')}</div>
+    <div style="font-size:0.66rem;color:var(--mint);margin-top:4px">Preserved: ${(changeSet.preservedProgress || []).join(', ') || 'none'}</div>
+    <div style="font-size:0.66rem;color:${source === 'llm' ? 'var(--mint)' : 'var(--slate)'}">[${source}]</div>
+  `;
+}
+
+async function directSend() {
+  const text = els.directInput.value.trim();
+  if (!text) return;
+  els.directInput.value = '';
+  const { changeSet, spoken, source } = await compileChangeSet(text, {
+    worldState: store.getState().worldState,
+    contract: store.getState().contract,
+    apiKey: store.getState().apiKey,
+  });
+  if (!changeSet) {
+    directPending = { changeSet: null, spoken, source };
+    renderDirectPreview();
+    return;
+  }
+  directPending = { changeSet, spoken, source };
+  renderDirectPreview();
+}
+
+els.directBtn.onclick = directSend;
+els.directInput.onkeydown = (e) => { if (e.key === 'Enter') directSend(); };
+els.directApply.onclick = () => {
+  if (!directPending || !directPending.changeSet) return;
+  const receipt = store.getState().commitChange(directPending.changeSet);
+  directPending = null;
+  renderDirectPreview();
+};
+els.directDiscard.onclick = () => {
+  directPending = null;
+  renderDirectPreview();
+};
+els.directUndo.onclick = () => {
+  store.getState().undoChange();
+  directPending = null;
+  renderDirectPreview();
+};
 
 function appendChat(role, receipt, userText) {
   const div = document.createElement('div');

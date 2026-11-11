@@ -17,6 +17,11 @@ const DERIVED = (s) => ({
   'conduit_01_active': s.conduit01Active === true,
   'conduit_02_active': s.conduit02Active === true,
   'conduit_03_active': s.conduit03Active === true,
+  // Live-world change conditions
+  'lowerEntranceSealed': s.lowerEntranceSealed === true,
+  'archive_flooded': s.floodActive === true && s.lowerEntranceSealed === true,
+  'final_relay_in_observatory': s.finalRelayInObservatory === true,
+  'archivist_rerouted': s.archivistRerouted === true,
 });
 
 const MUTATIONS = {
@@ -40,6 +45,11 @@ const MUTATIONS = {
   activate_conduit_02: (s) => ({ ...s, conduit02Active: true }),
   activate_conduit_03: (s) => ({ ...s, conduit03Active: true }),
   seal_chamber: (s) => ({ ...s, chamberOpen: false }),
+  // Live-world change mutations
+  seal_lower_entrance: (s) => ({ ...s, lowerEntranceSealed: true }),
+  flood_lower_level: (s) => ({ ...s, floodActive: true }),
+  relocate_final_relay: (s) => ({ ...s, finalRelayInObservatory: true }),
+  reroute_archivist: (s) => ({ ...s, archivistRerouted: true }),
 };
 
 export function enforce(action, targetId, worldState, contract) {
@@ -134,4 +144,119 @@ export function validatePlayability(worldState, contract) {
     problems,
     reachableZones: Array.from(reachable),
   };
+}
+
+/**
+ * Coordinated world-change engine.
+ *
+ * Validates a proposed change-set against the current world state BEFORE
+ * mutating anything. If every precondition holds and the resulting state
+ * remains playable, the complete change-set is committed as one transition.
+ * Otherwise the original state is returned unchanged with a rejection reason.
+ */
+export function commitChangeSet(worldState, contract, changeSet) {
+  const derived = DERIVED(worldState);
+
+  // Preflight: every operation must target a known object / condition.
+  const allowedConditions = new Set(Object.keys(derived));
+  allowedConditions.add('lowerEntranceSealed');
+  allowedConditions.add('floodActive');
+  allowedConditions.add('bridgeRaised');
+  allowedConditions.add('observatoryOpen');
+  allowedConditions.add('archivistRerouted');
+
+  const knownObjects = new Set();
+  for (const obj of contract.scene.objects) {
+    knownObjects.add(obj.id);
+  }
+
+  const changes = changeSet.changes || [];
+  for (const c of changes) {
+    if (c.type === 'setCondition' && !allowedConditions.has(c.condition)) {
+      return {
+        committed: false,
+        reason: `Unknown condition "${c.condition}".`,
+        worldState,
+      };
+    }
+    if (c.type === 'relocateObject' && !knownObjects.has(c.targetId)) {
+      return {
+        committed: false,
+        reason: `Unknown object "${c.targetId}".`,
+        worldState,
+      };
+    }
+  }
+
+  // Simulate the full result on a copy.
+  let next = { ...worldState };
+  for (const c of changes) {
+    switch (c.type) {
+      case 'setCondition':
+        next = { ...next, [c.condition]: c.value === true };
+        break;
+      case 'relocateObject':
+        next = {
+          ...next,
+          objectPlacement: { ...next.objectPlacement, [c.targetId]: c.zone },
+        };
+        break;
+      default:
+        return {
+          committed: false,
+          reason: `Unsupported change type "${c.type}".`,
+          worldState,
+        };
+    }
+  }
+
+  // Version guard: reject stale commits.
+  if (
+    changeSet.baseWorldVersion !== undefined &&
+    changeSet.baseWorldVersion !== next.worldVersion
+  ) {
+    return {
+      committed: false,
+        reason: 'World version changed since change-set was prepared.',
+      worldState,
+    };
+  }
+
+  // Postflight: validate the resulting state is still playable.
+  const validation = validatePlayability(next, contract);
+  if (!validation.playable) {
+    return {
+      committed: false,
+      reason:
+        validation.problems.map((p) => p.reason).join(' ') ||
+        'Proposed change would leave objectives unreachable.',
+      worldState,
+      validation,
+    };
+  }
+
+  // Preserve player progress: completed objectives must remain restored.
+  const preserved = changeSet.preservedProgress || [];
+  for (const p of preserved) {
+    const key = `${p}_restored`;
+    if (next[key] === undefined || next[key] !== true) {
+      return {
+        committed: false,
+        reason: `Preserved objective "${p}" would be lost.`,
+        worldState,
+      };
+    }
+  }
+
+  // Commit: increment version and return the new state.
+  return {
+    committed: true,
+    reason: changeSet.summary || 'Change applied.',
+    worldState: { ...next, worldVersion: (next.worldVersion || 0) + 1 },
+    validation,
+  };
+}
+
+export function derivedState(worldState) {
+  return DERIVED(worldState);
 }
