@@ -491,6 +491,11 @@ els.modeLogic.onclick = () => setMode('logic');
 els.modeChars.onclick = () => setMode('chars');
 els.modePlay.onclick = () => setMode('play');
 
+// ESC exits PLAY mode back to WORLD
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && currentMode === 'play') setMode('world');
+});
+
 // Boot after loader timeout (loader starts during creation canvas)
 advanceStage();
 setTimeout(() => {
