@@ -1,4 +1,4 @@
-import { FactoryScene } from './scene.js';
+import { ArchiveScene } from './scene.js';
 import { useStore } from './store.js';
 import { compileIntent } from './llm.js';
 import { enforce } from './runtime.js';
@@ -28,37 +28,89 @@ const els = {
     s1: document.getElementById('s1'), s2: document.getElementById('s2'),
     s3: document.getElementById('s3'), s4: document.getElementById('s4'), s5: document.getElementById('s5'),
   },
-  // inspector
-  cardActor: document.getElementById('cardActor'),
-  cardConveyor: document.getElementById('cardConveyor'),
+  // inspector cards
+  cardRelay: document.getElementById('cardRelay'),
+  cardChamber: document.getElementById('cardChamber'),
+  cardArchivist: document.getElementById('cardArchivist'),
   cardDefault: document.getElementById('cardDefault'),
   inspTitle: document.getElementById('inspTitle'),
+  rId: document.getElementById('rId'), rState: document.getElementById('rState'),
+  rRestored: document.getElementById('rRestored'), rFlow: document.getElementById('rFlow'),
+  cId: document.getElementById('cId'), cState: document.getElementById('cState'),
+  cCondition: document.getElementById('cCondition'), cProgress: document.getElementById('cProgress'),
   aPermitted: document.getElementById('aPermitted'), aConditional: document.getElementById('aConditional'),
-  cTag: document.getElementById('cTag'), cState: document.getElementById('cState'),
-  cHazard: document.getElementById('cHazard'), cLock: document.getElementById('cLock'),
-  cRestart: document.getElementById('cRestart'), cReason: document.getElementById('cReason'),
-  btnLockReleaseWorld: document.getElementById('btnLockReleaseWorld'),
-  btnLockEngageWorld: document.getElementById('btnLockEngageWorld'),
-  btnWorkerIn: document.getElementById('btnWorkerIn'),
-  btnWorkerOut: document.getElementById('btnWorkerOut'),
-  btnStopConvWorld: document.getElementById('btnStopConvWorld'),
   // nav
-  navWorld: document.getElementById('navWorld'), navActors: document.getElementById('navActors'),
-  navContracts: document.getElementById('navContracts'), navObjects: document.getElementById('navObjects'),
-  navHistory: document.getElementById('navHistory'),
+  navRelay1: document.getElementById('navRelay1'), navRelay2: document.getElementById('navRelay2'),
+  navRelay3: document.getElementById('navRelay3'), navChamber: document.getElementById('navChamber'),
+  navArchivist: document.getElementById('navArchivist'),
+  // mode buttons
+  modeWorld: document.getElementById('modeWorld'), modeLogic: document.getElementById('modeLogic'),
+  modeChars: document.getElementById('modeChars'), modePlay: document.getElementById('modePlay'),
   // hud
   hud: document.getElementById('hud'),
+  // creation canvas
+  create: document.getElementById('create'),
+  createInput: document.getElementById('createInput'),
+  btnCreate: document.getElementById('btnCreate'),
+  // trace
+  traceCountEl: document.getElementById('traceCount'),
 };
 
-let frame = null, last = performance.now();
-let loadResolve;
-const loadPromise = new Promise((r) => { loadResolve = r; });
+// ---- Mode state ----
+let currentMode = 'world';
+let creationComplete = false;
+
+function setMode(mode) {
+  currentMode = mode;
+  [els.modeWorld, els.modeLogic, els.modeChars, els.modePlay].forEach(b => b.classList.remove('active'));
+  const el = document.getElementById('mode' + mode.charAt(0).toUpperCase() + mode.slice(1));
+  if (el) el.classList.add('active');
+  // Hide inspector cards in PLAY mode (minimal chrome)
+  const inspector = document.getElementById('inspector');
+  const aiConsole = document.getElementById('ai-console');
+  if (mode === 'play') {
+    inspector.style.opacity = '0';
+    aiConsole.style.opacity = '0';
+  } else {
+    inspector.style.opacity = '1';
+    aiConsole.style.opacity = '1';
+  }
+  render();
+}
+
+// ---- Creation canvas ----
+function startCreation() {
+  els.create.classList.remove('hidden');
+  // Pause render loop while creating
+  if (frame) cancelAnimationFrame(frame);
+}
+startCreation();
+
+els.btnCreate.onclick = () => {
+  const text = els.createInput.value.trim();
+  if (!text) return;
+  // Transition out of creation
+  els.create.classList.add('hidden');
+  creationComplete = true;
+  initScene();
+  boot();
+};
+
+els.createInput.onkeydown = (e) => { if (e.key === 'Enter') els.btnCreate.click(); };
+
+// ---- DOM refs for buttons (set after creation) ----
+function wireButtons() {
+  els.btnRestoreRelay = document.getElementById('btnRestoreRelay');
+  els.btnOpenChamber = document.getElementById('btnOpenChamber');
+  if (!els.btnRestoreRelay || !els.btnOpenChamber) return false;
+  return true;
+}
 
 // ---- Loading sequence ----
 const STAGES = ['s1', 's2', 's3', 's4', 's5'];
 let stageIdx = 0;
 function advanceStage() {
-  if (stageIdx >= STAGES.length) { loadResolve(); return; }
+  if (stageIdx >= STAGES.length) return;
   const id = STAGES[stageIdx];
   STAGES.forEach((k) => els.loaderStages[k].classList.remove('active'));
   els.loaderStages[id].classList.add('active');
@@ -74,18 +126,18 @@ function fmt(ts) {
 
 // ---- UI sync ----
 function render() {
+  if (creationComplete === false) return;
   const s = store.getState();
   const ws = s.worldState;
 
   // trace count
   els.traceCount.textContent = `${s.receipts.length} events`;
 
-  const messages = Array.isArray(s.messages) ? s.messages : [];
   // timeline
   els.log.innerHTML = '';
   for (const r of s.receipts.slice(0, 14)) {
     const e = document.createElement('div');
-    e.className = `entry ${r.allowed ? '' : ''}`;
+    e.className = `entry`;
     const dot = document.createElement('div');
     dot.className = `dot ${r.allowed ? 'ok' : 'no'}`;
     const text = document.createElement('div');
@@ -108,8 +160,7 @@ function render() {
     time.textContent = fmt(r.ts);
     e.appendChild(dot); e.appendChild(text); e.appendChild(time);
     e.onclick = () => {
-      // focus relevant object
-      const targets = { conveyor_01: 'conveyor_01', warning_light_01: 'warning_light_01', maintenance_panel_01: 'maintenance_panel_01', worker: 'worker' };
+      const targets = { memory_relay_01: 'memory_relay_01', memory_relay_02: 'memory_relay_02', memory_relay_03: 'memory_relay_03', central_chamber: 'central_chamber', archivist: 'archivist' };
       if (targets[r.target]) selectObject(targets[r.target]);
       else selectObject(null);
     };
@@ -117,29 +168,18 @@ function render() {
   }
   els.log.scrollTop = els.log.scrollHeight;
 
-  // inspector: conveyoor card
-  const running = ws.conveyorRunning === true;
-  const occupied = ws.workerInDangerZone === true;
-  const lockReleased = ws.maintenanceLockReleased === true;
-  const panelOpen = ws.maintenancePanelOpen === true;
-  const restartAllowed = (!occupied) && lockReleased;
+  // Inspector: relay state (show whichever relay is selected, or first damaged)
+  const r1 = ws.relay01Restored === true;
+  const r2 = ws.relay02Restored === true;
+  const r3 = ws.relay03Restored === true;
+  const chamberOpen = ws.chamberOpen === true;
+  const restoredCount = [r1, r2, r3].filter(Boolean).length;
 
-  els.cTag.textContent = running ? 'RUNNING' : 'STOPPED';
-  els.cTag.className = `tag ${running ? 'active' : ''}`;
-  els.cState.textContent = running ? 'Running' : 'Stopped';
-  els.cState.className = `v ${running ? 'active' : ''}`;
-  els.cHazard.textContent = occupied ? 'Occupied' : 'Clear';
-  els.cHazard.className = `v ${occupied ? 'warn' : 'ok'}`;
-  els.cLock.textContent = lockReleased ? 'Released' : 'Engaged';
-  els.cLock.className = `v ${lockReleased ? 'ok' : 'warn'}`;
-  els.cRestart.textContent = restartAllowed ? 'Yes' : 'No';
-  els.cRestart.className = `v ${restartAllowed ? 'ok' : 'warn'}`;
-  els.cReason.textContent = restartAllowed ? 'All preconditions satisfied'
-    : (!occupied ? 'maintenance lock engaged' : 'hazard zone occupied');
+  els.rState.textContent = chamberOpen ? 'Open' : 'Sealed';
+  els.rState.className = `v ${chamberOpen ? 'ok' : 'warn'}`;
+  els.cProgress.textContent = `${restoredCount} / 3`;
 
   // HUD annotation
-  const annot = document.createElement('div');
-  // reuse single annotation
   let hudEl = els.hud.firstElementChild;
   if (!hudEl) {
     hudEl = document.createElement('div');
@@ -148,8 +188,7 @@ function render() {
   }
   if (scene.selectedId && scene.objs[scene.selectedId]) {
     const pos = scene.objs[scene.selectedId].position.clone();
-    pos.y += (scene.selectedId === 'worker' ? 0.7 : scene.selectedId === 'danger_zone' ? 0.05 : 1.6);
-    // project to screen
+    pos.y += (scene.selectedId === 'archivist' ? 1.0 : scene.selectedId === 'central_chamber' ? 1.8 : 0.7);
     const v = pos.clone().project(scene.camera);
     const w = window.innerWidth, h = window.innerHeight;
     const x = (v.x * 0.5 + 0.5) * w;
@@ -158,9 +197,13 @@ function render() {
     hudEl.style.left = `${x}px`;
     hudEl.style.top = `${y}px`;
     hudEl.style.opacity = visible ? '1' : '0';
-    hudEl.className = 'annot show ' + (scene.selectedId === 'danger_zone' ? 'oxide' : 'amber');
-    const labels = { conveyor_01: 'CONVEYOR 01', worker: 'WORKER', danger_zone: 'HAZARD ZONE', warning_light_01: 'WARNING LIGHT', maintenance_panel_01: 'MAINTENANCE PANEL' };
+    const labels = {
+      memory_relay_01: 'MEMORY RELAY 01', memory_relay_02: 'MEMORY RELAY 02', memory_relay_03: 'MEMORY RELAY 03',
+      central_chamber: 'CENTRAL CHAMBER', archivist: 'THE ARCHIVIST', energy_conduit_01: 'ENERGY CONDUIT 01',
+      energy_conduit_02: 'ENERGY CONDUIT 02', energy_conduit_03: 'ENERGY CONDUIT 03',
+    };
     hudEl.textContent = labels[scene.selectedId] || 'OBJECT';
+    hudEl.className = 'annot show ' + (scene.selectedId === 'central_chamber' ? 'copper' : 'mint');
   } else {
     hudEl.style.opacity = '0';
   }
@@ -168,60 +211,74 @@ function render() {
 
 // ---- Selection / camera ----
 function selectObject(id) {
-  scene.setSelected(id);
+  if (scene) scene.setSelected(id);
   if (!id) {
     els.inspTitle.textContent = 'SELECT OBJECT';
-    els.cardActor.classList.add('hidden');
-    els.cardConveyor.classList.add('hidden');
+    els.cardRelay.classList.add('hidden');
+    els.cardChamber.classList.add('hidden');
+    els.cardArchivist.classList.add('hidden');
     els.cardDefault.classList.remove('hidden');
     return;
   }
-  // camera ease target
   const targets = {
-    conveyor_01: new THREE.Vector3(2.2, 3.6, 5.6),
-    worker: new THREE.Vector3(-1.0, 3.2, 4.6),
-    danger_zone: new THREE.Vector3(5.4, 3.4, 2.2),
-    warning_light_01: new THREE.Vector3(-0.6, 4.4, 4.2),
-    maintenance_panel_01: new THREE.Vector3(0.6, 3.4, -3.4),
+    memory_relay_01: new THREE.Vector3(-3.6, 3.4, 5.6),
+    memory_relay_02: new THREE.Vector3(0, 3.4, 5.6),
+    memory_relay_03: new THREE.Vector3(3.6, 3.4, 5.6),
+    central_chamber: new THREE.Vector3(0, 4.0, 3.2),
+    archivist: new THREE.Vector3(-1.0, 3.2, 5.4),
   };
-  const look = new THREE.Vector3(0, 0.9, 0);
-  if (targets[id]) {
-    scene.camera.position.lerp(targets[id], 0); // snap start
+  const look = new THREE.Vector3(0, 1.3, 0);
+  if (targets[id] && scene) {
+    scene.camera.position.copy(targets[id]);
     scene.camera.lookAt(look);
   }
-  const labels = { conveyor_01: 'CONVEYOR 01', worker: 'WORKER', danger_zone: 'HAZARD ZONE', warning_light_01: 'WARNING LIGHT', maintenance_panel_01: 'MAINTENANCE PANEL' };
+  const labels = {
+    memory_relay_01: 'MEMORY RELAY 01', memory_relay_02: 'MEMORY RELAY 02', memory_relay_03: 'MEMORY RELAY 03',
+    central_chamber: 'CENTRAL CHAMBER', archivist: 'THE ARCHIVIST',
+  };
   els.inspTitle.textContent = labels[id] || 'OBJECT';
-  els.cardActor.classList.add('hidden');
-  els.cardConveyor.classList.add('hidden');
+  els.cardRelay.classList.add('hidden');
+  els.cardChamber.classList.add('hidden');
+  els.cardArchivist.classList.add('hidden');
   els.cardDefault.classList.add('hidden');
-  if (id === 'conveyor_01') els.cardConveyor.classList.remove('hidden');
-  else if (id === 'worker') {
-    // worker card = actor card reuse
-    els.cardActor.classList.remove('hidden');
-    els.inspTitle.textContent = 'WORKER · ZONE OCCUPANT';
-  } else els.cardDefault.classList.remove('hidden');
+
+  const s = store.getState();
+  const ws = s.worldState;
+
+  if (id.startsWith('memory_relay')) {
+    const idx = id.slice(-1);
+    const restored = ws[`relay0${idx}Restored`] === true;
+    els.rId.textContent = id;
+    els.rState.textContent = restored ? 'Restored' : 'Damaged';
+    els.rState.className = `v ${restored ? 'ok' : 'warn'}`;
+    els.rRestored.textContent = restored ? 'Yes' : 'No';
+    els.rFlow.textContent = restored ? 'Active' : 'Inert';
+    els.cardRelay.classList.remove('hidden');
+  } else if (id === 'central_chamber') {
+    els.cId.textContent = id;
+    els.cState.textContent = chamberOpen ? 'Open' : 'Sealed';
+    els.cState.className = `v ${chamberOpen ? 'ok' : 'warn'}`;
+    els.cardChamber.classList.remove('hidden');
+  } else if (id === 'archivist') {
+    els.cardArchivist.classList.remove('hidden');
+  }
 }
 
-// ---- Nav ----
-function setNav(activeId) {
-  [els.navWorld, els.navActors, els.navContracts, els.navObjects, els.navHistory].forEach((el) => el.classList.remove('active'));
-  const el = document.getElementById(activeId);
-  if (el) el.classList.add('active');
+// ---- Actions ----
+function restoreRelay(idx) {
+  store.applyEdit(`relay_0${idx}_in`);
 }
-els.navWorld.onclick = () => { setNav('navWorld'); selectObject(null); };
-els.navObjects.onclick = () => { setNav('navObjects'); selectObject(null); };
-els.navContracts.onclick = () => { setNav('navContracts'); selectObject(null); };
-els.navHistory.onclick = () => { setNav('navHistory'); };
-
-// ---- Actions from nav / world ----
-function applyEdit(kind) {
-  const note = { worker_in: 'Worker moved into the danger zone.', worker_out: 'Worker moved back to the factory floor.', lock_release: 'Maintenance lock released.', lock_engage: 'Maintenance lock engaged.' }[kind];
-  store.applyEdit(kind);
+function openChamber() {
+  store.getState().chat('Open the central chamber.');
 }
 
-// wire via store buttons? The new UI moved buttons into cards. We'll expose via inspector buttons + keyboard.
-// Simpler: keep store.applyEdit accessible globally for console use.
-window.__kinetApplyEdit = applyEdit;
+function wireActionButtons() {
+  const r1Btn = document.getElementById('btnRestoreRelay');
+  const openBtn = document.getElementById('btnOpenChamber');
+  if (!r1Btn || !openBtn) return;
+  r1Btn.onclick = () => restoreRelay(1);
+  openBtn.onclick = () => openChamber();
+}
 
 // ---- AI chat ----
 async function send() {
@@ -232,21 +289,13 @@ async function send() {
   try {
     const receipt = await store.getState().chat(text);
     appendChat('ai', receipt, text);
-    selectObject(receipt.target || null);
+    if (receipt.target) selectObject(receipt.target);
   } catch (err) {
-    appendChat('ai', { text: 'Supervisor unavailable. Fallback compiled locally.', action: null, target: null, allowed: false, reason: err.message, source: 'error' });
+    appendChat('ai', { text: 'Archivist unavailable. Fallback compiled locally.', action: null, target: null, allowed: false, reason: err.message, source: 'error' });
   }
 }
 els.btnSend.onclick = send;
 els.chatInput.onkeydown = (e) => { if (e.key === 'Enter') send(); };
-
-els.btnLockReleaseWorld.onclick = () => applyEdit('lock_release');
-els.btnLockEngageWorld.onclick = () => applyEdit('lock_engage');
-els.btnWorkerIn.onclick = () => applyEdit('worker_in');
-els.btnWorkerOut.onclick = () => applyEdit('worker_out');
-els.btnStopConvWorld.onclick = () => {
-  store.getState().chat('Stop the conveyor.');
-};
 
 function appendChat(role, receipt, userText) {
   const div = document.createElement('div');
@@ -267,6 +316,7 @@ function appendChat(role, receipt, userText) {
 }
 
 // ---- Animation loop ----
+let frame = null, last = performance.now();
 function loop(now) {
   const dt = (now - last) / 1000;
   last = now;
@@ -282,7 +332,7 @@ function loop(now) {
 // ---- Boot ----
 function initScene() {
   try {
-    scene = new FactoryScene(canvas);
+    scene = new ArchiveScene(canvas);
     return true;
   } catch (e) {
     console.error('Scene init failed:', e);
@@ -301,12 +351,17 @@ function boot() {
   }
 }
 
+// Mode button wiring
+els.modeWorld.onclick = () => setMode('world');
+els.modeLogic.onclick = () => setMode('logic');
+els.modeChars.onclick = () => setMode('chars');
+els.modePlay.onclick = () => setMode('play');
+
+// Boot after loader timeout (loader starts during creation canvas)
 advanceStage();
-// Hard stop: loader always comes off after ~2.5s even if JS errors
 setTimeout(() => {
   els.loader.classList.add('hidden');
-  if (!scene) initScene();
-  boot();
+  wireActionButtons();
 }, 2700);
 
 // expose for console debugging

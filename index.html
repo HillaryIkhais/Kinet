@@ -3,19 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>KINET — World Operations</title>
+  <title>KINET — World Atelier</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;700&family=Space+Grotesk:wght@500;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Space+Grotesk:wght@500;700;800&family=Cormorant+Garamond:wght@600;800&display=swap" rel="stylesheet">
   <style>
     :root{
-      --bg:#0a0b09; --panel:rgba(26,28,24,0.72); --panel2:rgba(34,37,32,0.6);
-      --line:rgba(230,162,60,0.18); --line-dim:rgba(119,125,120,0.25);
-      --ink:#E8E1D1; --muted:#777D78; --steel:#777D78;
-      --amber:#E6A23C; --amber-glow:rgba(230,162,60,0.35); --amber-dim:#8a6b26;
-      --oxide:#C65D38; --oxide-glow:rgba(198,93,56,0.35);
-      --green:#9BAF78; --green-glow:rgba(155,175,120,0.35);
-      --ink-glow:rgba(232,225,209,0.15);
+      --bg:#091b20; --panel:rgba(16,40,46,0.82); --panel2:rgba(22,64,71,0.6);
+      --line:rgba(184,121,85,0.25); --line-dim:rgba(101,119,122,0.3);
+      --ink:#e8e0ce; --muted:#65777a; --slate:#65777a;
+      --copper:#b87955; --copper-glow:rgba(184,121,85,0.35);
+      --mint:#a6d8c5; --mint-glow:rgba(166,216,197,0.35);
+      --gold:#d4af70; --gold-glow:rgba(212,175,112,0.35);
+      --teal:#164047;
     }
     *{box-sizing:border-box;margin:0;padding:0}
     html,body,#app{height:100%;width:100%;background:var(--bg);color:var(--ink);overflow:hidden;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
@@ -23,116 +23,138 @@
 
     /* ---------- Header ---------- */
     header{
-      height:56px; background:rgba(10,11,9,0.85); backdrop-filter:blur(10px) saturate(120%);
+      height:60px; background:rgba(9,27,32,0.85); backdrop-filter:blur(10px) saturate(120%);
       border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between;
-      padding:0 24px; z-index:60; position:relative;
-      box-shadow:0 1px 0 rgba(255,255,255,0.03);
+      padding:0 28px; z-index:60; position:relative;
     }
-    .brand{display:flex;align-items:center;gap:11px;font-family:'Space Grotesk',sans-serif;font-weight:800;letter-spacing:-0.03em;font-size:1.35rem}
-    .brand .dot{width:10px;height:10px;background:var(--amber);border-radius:50%;box-shadow:0 0 0 0 var(--amber-glow);animation:pulse 3s infinite}
-    @keyframes pulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 var(--amber-glow)}50%{transform:scale(1.15);box-shadow:0 0 0 10px rgba(0,0,0,0)}}
-    .world-tag{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;font-weight:700;color:var(--amber);letter-spacing:0.12em;background:rgba(230,162,60,0.08);border:1px solid var(--line);padding:2px 10px;border-radius:6px}
-    .top-right{display:flex;align-items:center;gap:14px;font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--muted)}
-    .top-right .dot{width:7px;height:7px;background:var(--green);border-radius:50%;box-shadow:0 0 0 0 var(--green-glow);animation:pulse 2s infinite}
-    .status-text{color:var(--ink)}
+    .brand{display:flex;align-items:center;gap:12px;font-family:'Space Grotesk',sans-serif;font-weight:800;letter-spacing:-0.02em;font-size:1.5rem}
+    .brand .dot{width:11px;height:11px;background:var(--copper);border-radius:50%;box-shadow:0 0 0 0 var(--copper-glow);animation:pulse 3s infinite}
+    @keyframes pulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 var(--copper-glow)}50%{transform:scale(1.14);box-shadow:0 0 0 12px rgba(0,0,0,0)}}
+    .world-tag{font-family:'IBM Plex Mono',monospace;font-size:0.66rem;font-weight:700;color:var(--copper);letter-spacing:0.14em;background:rgba(184,121,85,0.08);border:1px solid var(--line);padding:2px 11px;border-radius:6px}
+    .top-right{display:flex;align-items:center;gap:16px;font-family:'IBM Plex Mono',monospace;font-size:0.68rem;color:var(--muted)}
+    .top-right .dot{width:7px;height:7px;background:var(--mint);border-radius:50%;box-shadow:0 0 0 0 var(--mint-glow);animation:pulse 2s infinite}
 
     /* ---------- Canvas hero ---------- */
-    #world{position:absolute;inset:0;display:block;z-index:0;background:#050605}
+    #world{position:absolute;inset:0;display:block;z-index:0;background:#040c0f}
     #world canvas{display:block;width:100%;height:100%}
 
-    /* ---------- Left navigation ---------- */
-    #left-nav{
-      position:fixed;left:0;top:56px;bottom:60px;width:250px;background:var(--panel);backdrop-filter:blur(8px);
-      border-right:1px solid var(--line-dim); display:flex;flex-direction:column;z-index:40;
-      font-family:'IBM Plex Mono',monospace;font-size:0.72rem; box-shadow:2px 0 0 rgba(255,255,255,0.02);
+    /* ---------- Mode bar ---------- */
+    #mode-bar{
+      position:fixed;left:28px;top:128px;z-index:50;display:flex;flex-direction:column;gap:8px
     }
-    #left-nav .nav-title{padding:16px 18px 10px;font-size:0.58rem;text-transform:uppercase;letter-spacing:0.18em;color:var(--muted);border-bottom:1px solid var(--line-dim)}
-    .nav-section{padding:10px 18px;cursor:pointer;color:var(--ink);border-left:3px solid transparent;transition:all .15s;display:flex;align-items:center;gap:11px;position:relative}
+    .mode-btn{
+      width:44px;height:44px;border-radius:10px;border:1px solid var(--line-dim);background:var(--panel);
+      color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:0.62rem;font-weight:700;
+      text-align:center;padding-top:8px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1
+    }
+    .mode-btn .dot{width:7px;height:7px;border-radius:50%;margin-top:2px}
+    .mode-btn:hover{color:var(--ink);border-color:var(--copper)}
+    .mode-btn.active{color:var(--copper);border-color:var(--copper);background:rgba(184,121,85,0.08);box-shadow:0 0 16px var(--copper-glow)}
+    .mode-btn.active .dot{background:var(--copper);box-shadow:0 0 0 4px var(--copper-glow)}
+
+    /* ---------- Left nav ---------- */
+    #left-nav{
+      position:fixed;left:0;top:60px;bottom:64px;width:260px;background:var(--panel);backdrop-filter:blur(8px);
+      border-right:1px solid var(--line-dim); display:flex;flex-direction:column;z-index:40;
+      font-family:'IBM Plex Mono',monospace;font-size:0.7rem; box-shadow:2px 0 0 rgba(255,255,255,0.02)
+    }
+    #left-nav .nav-title{padding:16px 20px 10px;font-size:0.56rem;text-transform:uppercase;letter-spacing:0.18em;color:var(--muted);border-bottom:1px solid var(--line-dim)}
+    .nav-section{padding:10px 20px;cursor:pointer;color:var(--ink);border-left:3px solid transparent;transition:all .15s;display:flex;align-items:center;gap:12px;position:relative}
     .nav-section::before{content:'';position:absolute;left:0;top:0;bottom:0;width:1px;background:rgba(255,255,255,0.03)}
-    .nav-section:hover{background:rgba(255,255,255,0.03);color:var(--amber)}
-    .nav-section.active{border-left-color:var(--amber);color:var(--amber);background:rgba(230,162,60,0.06)}
-    .nav-dot{width:7px;height:7px;border-radius:50%;background:var(--steel);flex-shrink:0;box-shadow:0 0 0 2px rgba(0,0,0,0.6)}
-    .nav-section.active .nav-dot{background:var(--amber);box-shadow:0 0 0 4px var(--amber-glow)}
+    .nav-section:hover{background:rgba(255,255,255,0.03);color:var(--copper)}
+    .nav-section.active{border-left-color:var(--copper);color:var(--copper);background:rgba(184,121,85,0.06)}
+    .nav-dot{width:7px;height:7px;border-radius:50%;background:var(--slate);flex-shrink:0;box-shadow:0 0 0 2px rgba(0,0,0,0.6)}
+    .nav-section.active .nav-dot{background:var(--copper);box-shadow:0 0 0 4px var(--copper-glow)}
     .nav-label{font-weight:600;font-size:0.78rem}
     .nav-sub{font-size:0.64rem;color:var(--muted);margin-top:1px}
 
     /* ---------- Right panel ---------- */
     #right-panel{
-      position:fixed;right:0;top:56px;bottom:60px;width:340px;background:var(--panel);backdrop-filter:blur(8px);
+      position:fixed;right:0;top:60px;bottom:64px;width:340px;background:var(--panel);backdrop-filter:blur(8px);
       border-left:1px solid var(--line-dim); display:flex;flex-direction:column;z-index:40;overflow:hidden;
-      box-shadow:-2px 0 0 rgba(255,255,255,0.02);
+      box-shadow:-2px 0 0 rgba(255,255,255,0.02)
     }
     #right-panel header{padding:14px 20px;border-bottom:1px solid var(--line-dim);font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:0.95rem;letter-spacing:-0.01em;display:flex;justify-content:space-between;align-items:center}
-    #right-panel header .sec{font-size:0.58rem;text-transform:uppercase;letter-spacing:0.16em;color:var(--amber)}
-    #rp-scroll{overflow-y:auto;padding:16px 20px;flex:1;display:flex;flex-direction:column;gap:14px;font-size:0.82rem}
+    #right-panel header .sec{font-size:0.56rem;text-transform:uppercase;letter-spacing:0.16em;color:var(--copper)}
+    #rp-scroll{overflow-y:auto;padding:16px 20px;flex:1;display:flex;flex-direction:column;gap:14px;font-size:0.78rem}
     .rp-card{border:1px solid var(--line-dim);border-radius:10px;background:var(--panel2);overflow:hidden;transition:border-color .2s,box-shadow .2s}
-    .rp-card:hover{border-color:rgba(255,255,255,0.08)}
-    .rp-card.active{border-color:var(--amber);box-shadow:0 0 16px var(--amber-glow)}
+    .rp-card.active{border-color:var(--copper);box-shadow:0 0 16px var(--copper-glow)}
     .rp-card h3{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);padding:10px 14px;border-bottom:1px solid var(--line-dim);display:flex;justify-content:space-between;align-items:center}
-    .rp-card h3 .tag{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:var(--green);background:rgba(155,175,120,0.08);border:1px solid rgba(155,175,120,0.15);padding:1px 8px;border-radius:5px}
-    .rp-card h3 .tag.warn{color:var(--oxide);background:rgba(198,93,56,0.08);border-color:rgba(198,93,56,0.15)}
-    .rp-card h3 .tag.active{color:var(--amber);background:rgba(230,162,60,0.08);border-color:rgba(230,162,60,0.15)}
+    .rp-card h3 .tag{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:var(--mint);background:rgba(166,216,197,0.08);border:1px solid rgba(166,216,197,0.15);padding:1px 8px;border-radius:5px}
+    .rp-card h3 .tag.warn{color:var(--gold);background:rgba(212,175,112,0.08);border-color:rgba(212,175,112,0.15)}
     .rp-body{padding:12px 14px;display:flex;flex-direction:column;gap:9px}
-    .kv{display:flex;justify-content:space-between;padding:6px 3px;border-bottom:1px solid rgba(255,255,255,0.02);font-family:'IBM Plex Mono',monospace;font-size:0.74rem}
+    .kv{display:flex;justify-content:space-between;padding:6px 3px;border-bottom:1px solid rgba(255,255,255,0.02);font-family:'IBM Plex Mono',monospace;font-size:0.72rem}
     .kv .k{color:var(--muted)} .kv .v{color:var(--ink);font-variant-numeric:tabular-nums}
-    .kv .v.ok{color:var(--green)} .kv .v.warn{color:var(--oxide)} .kv .v.active{color:var(--amber)}
-    .btn-group{display:flex;gap:8px;margin-top:4px}
-    .btn{flex:1;padding:8px 10px;border:1px solid var(--line-dim);border-radius:7px;background:transparent;color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:0.68rem;font-weight:700;cursor:pointer;transition:all .15s;text-align:left}
-    .btn:hover{border-color:var(--amber);color:var(--amber);background:rgba(230,162,60,0.05)}
-    .btn.primary{background:var(--amber);color:#14120c;border-color:var(--amber);box-shadow:0 0 12px var(--amber-glow)}
-    .btn.primary:hover{background:#d4942e;box-shadow:0 0 20px var(--amber-glow)}
+    .kv .v.ok{color:var(--mint)} .kv .v.warn{color:var(--gold)} .kv .v.active{color:var(--copper)}
+    .btn-group{display:flex;gap:8px;margin-top:4px;flex-wrap:wrap}
+    .btn{flex:1;padding:8px 10px;border:1px solid var(--line-dim);border-radius:7px;background:transparent;color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:0.66rem;font-weight:700;cursor:pointer;transition:all .15s;text-align:left;min-width:110px}
+    .btn:hover{border-color:var(--copper);color:var(--copper);background:rgba(184,121,85,0.05)}
+    .btn.primary{background:var(--copper);color:#0b1416;border-color:var(--copper);box-shadow:0 0 12px var(--copper-glow)}
+    .btn.primary:hover{background:#a3633f;box-shadow:0 0 20px var(--copper-glow)}
     .btn.secondary{background:transparent;color:var(--muted)}
     .btn.secondary:hover{color:var(--ink)}
     .btn:disabled{opacity:0.45;cursor:not-allowed}
 
     /* ---------- AI console ---------- */
     #ai-console{border-top:1px solid var(--line-dim)}
-    #ai-console .rp-body{font-size:0.8rem}
-    #chat{height:140px;overflow-y:auto;border:1px solid var(--line-dim);border-radius:8px;background:rgba(5,6,5,0.6);padding:8px;display:flex;flex-direction:column;gap:6px;margin-bottom:5px}
-    .msg{padding:7px 10px;border-radius:8px;font-size:0.76rem;line-height:1.4;max-width:94%;border:1px solid rgba(255,255,255,0.04)}
-    .msg.user{align-self:flex-end;background:rgba(230,162,60,0.06);border-color:rgba(230,162,60,0.2);color:var(--ink)}
-    .msg.ai{align-self:flex-start;background:rgba(34,37,32,0.8);border-color:var(--line-dim);color:var(--ink)}
-    .msg .act{display:block;margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:0.64rem;font-weight:800;text-transform:uppercase;letter-spacing:0.05em}
+    #ai-console .rp-body{font-size:0.78rem}
+    #chat{height:136px;overflow-y:auto;border:1px solid var(--line-dim);border-radius:8px;background:rgba(4,12,15,0.6);padding:8px;display:flex;flex-direction:column;gap:6px;margin-bottom:5px}
+    .msg{padding:7px 10px;border-radius:8px;font-size:0.74rem;line-height:1.4;max-width:94%;border:1px solid rgba(255,255,255,0.04)}
+    .msg.user{align-self:flex-end;background:rgba(184,121,85,0.06);border-color:rgba(184,121,85,0.2);color:var(--ink)}
+    .msg.ai{align-self:flex-start;background:rgba(22,64,71,0.8);border-color:var(--line-dim);color:var(--ink)}
+    .msg .act{display:block;margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:0.62rem;font-weight:800;text-transform:uppercase;letter-spacing:0.05em}
     .chat-input{display:flex;gap:6px;margin-top:4px}
-    .chat-input input{flex:1;padding:7px 10px;border:1px solid var(--line-dim);border-radius:6px;background:rgba(5,6,5,0.8);color:var(--ink);font-family:inherit;font-size:0.76rem}
-    .chat-input button{flex:none;width:64px;padding:7px 0;background:var(--amber);color:#14120c;border:none;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-weight:800;font-size:0.68rem;cursor:pointer;box-shadow:0 0 8px var(--amber-glow)}
-    .chat-input button:hover{background:#d4942e}
-    .chat-hint{font-family:'IBM Plex Mono',monospace;font-size:0.64rem;color:var(--muted);margin-top:4px;line-height:1.4}
+    .chat-input input{flex:1;padding:7px 10px;border:1px solid var(--line-dim);border-radius:6px;background:rgba(4,12,15,0.8);color:var(--ink);font-family:inherit;font-size:0.74rem}
+    .chat-input button{flex:none;width:64px;padding:7px 0;background:var(--copper);color:#0b1416;border:none;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-weight:800;font-size:0.66rem;cursor:pointer;box-shadow:0 0 8px var(--copper-glow)}
+    .chat-input button:hover{background:#a3633f}
+    .chat-hint{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:var(--muted);margin-top:4px;line-height:1.4}
 
-    /* ---------- Bottom timeline ---------- */
-    #timeline{
-      position:fixed;left:250px;right:340px;bottom:0;height:140px;background:#050605;border-top:1px solid var(--line-dim);border-left:1px solid var(--line-dim);border-right:1px solid var(--line-dim);
+    /* ---------- Bottom trace ---------- */
+    #trace{
+      position:fixed;left:260px;right:340px;bottom:0;height:64px;background:#040c0f;border-top:1px solid var(--line-dim);border-left:1px solid var(--line-dim);border-right:1px solid var(--line-dim);
       display:flex;flex-direction:column;z-index:35;overflow:hidden
     }
-    #timeline header{height:22px;padding:0 16px;border-bottom:1px solid var(--line-dim);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-    #timeline header .t{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.14em;color:var(--amber)}
-    #timeline header .n{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;color:var(--muted)}
-    #log{overflow-y:auto;padding:8px 16px;display:flex;flex-direction:column;gap:4px;flex:1;font-size:0.74rem}
-    .entry{display:flex;gap:9px;align-items:flex-start;padding:3px 0;border-radius:6px;cursor:pointer;transition:background .1s}
+    #trace header{height:20px;padding:0 16px;border-bottom:1px solid var(--line-dim);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    #trace header .t{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.14em;color:var(--copper)}
+    #trace header .n{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;color:var(--muted)}
+    #log{overflow-y:auto;padding:6px 16px;display:flex;flex-direction:column;gap:3px;flex:1;font-size:0.7rem}
+    .entry{display:flex;gap:9px;align-items:flex-start;padding:2px 0;border-radius:5px;cursor:pointer;transition:background .1s}
     .entry:hover{background:rgba(255,255,255,0.02)}
-    .entry .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:7px}
-    .entry .dot.ok{background:var(--green);box-shadow:0 0 0 4px var(--green-glow)}
-    .entry .dot.no{background:var(--oxide);box-shadow:0 0 0 4px var(--oxide-glow)}
-    .entry .text{flex:1;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;line-height:1.35}
+    .entry .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:6px}
+    .entry .dot.ok{background:var(--mint);box-shadow:0 0 0 3px var(--mint-glow)}
+    .entry .dot.no{background:var(--gold);box-shadow:0 0 0 3px var(--gold-glow)}
+    .entry .text{flex:1;font-family:'IBM Plex Mono',monospace;font-size:0.68rem;line-height:1.3}
     .entry .text b{color:var(--ink)} .entry .text .who{color:var(--muted)} .entry .text .decision{font-weight:800}
-    .entry .time{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:var(--muted);margin-top:1px;white-space:nowrap}
+    .entry .time{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;color:var(--muted);margin-top:1px;white-space:nowrap}
 
-    /* ---------- HUD / annotations ---------- */
+    /* ---------- HUD annotations ---------- */
     #hud{position:absolute;inset:0;pointer-events:none;z-index:20}
-    .annot{position:absolute;transform:translate(-50%,-110%);pointer-events:none;padding:5px 10px;border-radius:6px;background:rgba(10,11,9,0.9);border:1px solid var(--line);color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:0.7rem;font-weight:800;white-space:nowrap;opacity:0;transition:opacity .2s,transform .2s;box-shadow:0 4px 12px rgba(0,0,0,0.5)}
+    .annot{position:absolute;transform:translate(-50%,-110%);pointer-events:none;padding:5px 10px;border-radius:6px;background:rgba(9,27,32,0.9);border:1px solid var(--line);color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:0.68rem;font-weight:800;white-space:nowrap;opacity:0;transition:opacity .2s,transform .2s;box-shadow:0 4px 12px rgba(0,0,0,0.5)}
     .annot.show{opacity:1}
-    .annot.amber{border-color:var(--amber);color:var(--amber);box-shadow:0 0 12px var(--amber-glow)}
-    .annot.oxide{border-color:var(--oxide);color:var(--oxide);box-shadow:0 0 12px var(--oxide-glow)}
+    .annot.copper{border-color:var(--copper);color:var(--copper);box-shadow:0 0 12px var(--copper-glow)}
+    .annot.mint{border-color:var(--mint);color:var(--mint);box-shadow:0 0 12px var(--mint-glow)}
 
-    /* ---------- Overlay: loading ---------- */
-    #loader{position:absolute;inset:0;background:#050605;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:90;color:var(--ink)}
-    #loader .core{width:56px;height:56px;border:2px solid var(--line-dim);border-top-color:var(--amber);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:16px;box-shadow:0 0 20px var(--amber-glow)}
+    /* ---------- Creation canvas overlay ---------- */
+    #create{
+      position:absolute;inset:0;background:rgba(4,12,15,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:80;color:var(--ink);text-align:center;padding:40px
+    }
+    .create-title{font-family:'Cormorant Garamond',serif;font-weight:800;font-size:3.5rem;letter-spacing:-0.03em;color:var(--ink);margin-bottom:12px;line-height:1.05}
+    .create-sub{font-family:'Space Grotesk',sans-serif;font-weight:500;font-size:1.1rem;color:var(--muted);margin-bottom:32px;max-width:420px}
+    .create-input{width:100%;max-width:520px;padding:16px 20px;border:1px solid var(--line);border-radius:10px;background:rgba(22,64,71,0.6);color:var(--ink);font-family:'Space Grotesk',sans-serif;font-size:1.05rem;font-weight:500}
+    .create-input::placeholder{color:var(--muted)}
+    .create-btn{margin-top:20px;padding:14px 36px;background:var(--copper);color:#0b1416;border:none;border-radius:8px;font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:1rem;cursor:pointer;box-shadow:0 0 18px var(--copper-glow);transition:all .2s}
+    .create-btn:hover{background:#a3633f;box-shadow:0 0 28px var(--copper-glow)}
+    .create-hint{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;color:var(--muted);margin-top:16px}
+
+    /* ---------- Loading ---------- */
+    #loader{position:absolute;inset:0;background:#040c0f;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:90;color:var(--ink)}
+    #loader .core{width:56px;height:56px;border:2px solid var(--line-dim);border-top-color:var(--copper);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:16px;box-shadow:0 0 20px var(--copper-glow)}
     @keyframes spin{to{transform:rotate(360deg)}}
-    #loader .stage{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;color:var(--muted);margin-top:12px;text-align:left;min-width:300px}
+    #loader .stage{font-family:'IBM Plex Mono',monospace;font-size:0.66rem;color:var(--muted);margin-top:12px;text-align:left;min-width:300px}
     #loader .stage div{margin:4px 0;opacity:0.55;transition:opacity .25s}
-    #loader .stage div.active{opacity:1;color:var(--amber)}
-    #loader .bar{width:360px;height:2px;background:#141613;margin-top:24px;position:relative;overflow:hidden;border-radius:1px}
-    #loader .bar .fill{position:absolute;left:0;top:0;height:100%;background:linear-gradient(90deg,var(--amber),#d4942e);width:0;transition:width .4s ease}
+    #loader .stage div.active{opacity:1;color:var(--copper)}
+    #loader .bar{width:360px;height:2px;background:#0a2026;margin-top:24px;position:relative;overflow:hidden;border-radius:1px}
+    #loader .bar .fill{position:absolute;left:0;top:0;height:100%;background:linear-gradient(90deg,var(--copper),#a3633f);width:0;transition:width .4s ease}
 
     .hidden{display:none!important}
     .muted{color:var(--muted);font-size:0.76rem}
@@ -140,7 +162,8 @@
     @media(max-width:900px){
       #left-nav{width:64px;padding:0} .nav-label,.nav-sub,.nav-title{display:none}
       #right-panel{width:260px}
-      #timeline{left:64px;right:260px}
+      #trace{left:64px;right:260px}
+      #mode-bar{left:8px}
     }
   </style>
 </head>
@@ -148,102 +171,119 @@
   <div id="app">
     <header>
       <div class="brand"><div class="dot"></div> KINET</div>
-      <div class="world-tag">WORLD 01 · FACTORY</div>
+      <div class="world-tag">WORLD 01 · DROWNED ARCHIVE</div>
       <div class="top-right"><div class="dot"></div><span class="status-text" id="sysStatus">LIVE SIMULATION</span></div>
     </header>
 
     <div id="world"></div>
     <div id="hud"></div>
 
+    <div id="mode-bar">
+      <div class="mode-btn active" id="modeWorld"><div>WORLD</div><div class="dot"></div></div>
+      <div class="mode-btn" id="modeLogic"><div>LOGIC</div><div class="dot"></div></div>
+      <div class="mode-btn" id="modeChars"><div>CHARACTERS</div><div class="dot"></div></div>
+      <div class="mode-btn" id="modePlay"><div>PLAY</div><div class="dot"></div></div>
+    </div>
+
     <nav id="left-nav">
-      <div class="nav-title">SYSTEMS</div>
-      <div class="nav-section active" id="navWorld"><div class="nav-dot"></div><div><div class="nav-label">World</div><div class="nav-sub">North production floor</div></div></div>
-      <div class="nav-section" id="navActors"><div class="nav-dot"></div><div><div class="nav-label">Actors</div><div class="nav-sub">Floor supervisor</div></div></div>
-      <div class="nav-section" id="navContracts"><div class="nav-dot"></div><div><div class="nav-label">Contract</div><div class="sub">Authority limits</div></div></div>
-      <div class="nav-section" id="navObjects"><div class="nav-dot"></div><div><div class="nav-label">Objects</div><div class="nav-sub">Registered world state</div></div></div>
-      <div class="nav-section" id="navHistory"><div class="nav-dot"></div><div><div class="nav-label">History</div><div class="nav-sub">Execution trace</div></div></div>
+      <div class="nav-title">WORLD OBJECTS</div>
+      <div class="nav-section active" id="navRelay1"><div class="nav-dot"></div><div><div class="nav-label">Memory Relay 01</div><div class="nav-sub">Damaged</div></div></div>
+      <div class="nav-section" id="navRelay2"><div class="nav-dot"></div><div><div class="nav-label">Memory Relay 02</div><div class="nav-sub">Damaged</div></div></div>
+      <div class="nav-section" id="navRelay3"><div class="nav-dot"></div><div><div class="nav-label">Memory Relay 03</div><div class="nav-sub">Damaged</div></div></div>
+      <div class="nav-section" id="navChamber"><div class="nav-dot"></div><div><div class="nav-label">Central Chamber</div><div class="nav-sub">Sealed</div></div></div>
+      <div class="nav-section" id="navArchivist"><div class="nav-dot"></div><div><div class="nav-label">The Archivist</div><div class="nav-sub">Keeper of memory</div></div></div>
     </nav>
 
     <aside id="right-panel">
       <header><span class="sec">INSPECTOR</span><span id="inspTitle">SELECT OBJECT</span></header>
       <div id="rp-scroll">
         <div id="inspector">
-          <div class="rp-card hidden" id="cardActor">
-            <h3>ACTOR AUTHORITY<span class="tag">SUPERVISOR</span></h3>
+          <div class="rp-card hidden" id="cardRelay">
+            <h3>MEMORY RELAY<span class="tag">OBJECT</span></h3>
             <div class="rp-body">
-              <div class="kv"><span class="k">Identity</span><span class="v" id="aActorId">supervisor-01</span></div>
-              <div class="kv"><span class="k">Role</span><span class="v">floor supervisor</span></div>
-              <div class="kv"><span class="k">Authority</span><span class="v ok">Limited</span></div>
-              <div class="kv"><span class="k">Permitted</span><span class="v active" id="aPermitted">Stop · Alert · Inspect</span></div>
-              <div class="kv"><span class="k">Conditional</span><span class="v warn" id="aConditional">Restart conveyor</span></div>
-            </div>
-          </div>
-          <div class="rp-card hidden" id="cardConveyor">
-            <h3>CONVEYOR 01<span class="tag" id="cTag">RUNNING</span></h3>
-            <div class="rp-body">
-              <div class="kv"><span class="k">State</span><span class="v active" id="cState">Running</span></div>
-              <div class="kv"><span class="k">Hazard zone</span><span class="v warn" id="cHazard">Occupied</span></div>
-              <div class="kv"><span class="k">Maintenance lock</span><span class="v warn" id="cLock">Engaged</span></div>
-              <div class="kv"><span class="k">Restart allowed</span><span class="v" id="cRestart">No</span></div>
-              <div class="kv"><span class="k">Reason</span><span class="v muted" id="cReason">Preconditions not met</span></div>
-              <div style="display:flex;gap:8px;margin-top:6px">
-                <button class="btn secondary" id="btnLockRelease">Release lock</button>
-                <button class="btn secondary" id="btnLockEngage">Engage lock</button>
-                <button class="btn" id="btnStopConv">Stop conveyor</button>
+              <div class="kv"><span class="k">Identity</span><span class="v" id="rId">memory_relay_01</span></div>
+              <div class="kv"><span class="k">State</span><span class="v warn" id="rState">Damaged</span></div>
+              <div class="kv"><span class="k">Restored</span><span class="v" id="rRestored">No</span></div>
+              <div class="kv"><span class="k">Energy Flow</span><span class="v" id="rFlow">Inert</span></div>
+              <div class="btn-group">
+                <button class="btn secondary" id="btnRestoreRelay">Restore Relay</button>
               </div>
             </div>
           </div>
+          <div class="rp-card hidden" id="cardChamber">
+            <h3>CENTRAL CHAMBER<span class="tag">OBJECT</span></h3>
+            <div class="rp-body">
+              <div class="kv"><span class="k">Identity</span><span class="v" id="cId">central_chamber</span></div>
+              <div class="kv"><span class="k">State</span><span class="v warn" id="cState">Sealed</span></div>
+              <div class="kv"><span class="k">Unlock Condition</span><span class="v" id="cCondition">All 3 relays restored</span></div>
+              <div class="kv"><span class="k">Relay Progress</span><span class="v" id="cProgress">0 / 3</span></div>
+              <div class="btn-group">
+                <button class="btn primary" id="btnOpenChamber">Open Chamber</button>
+              </div>
+            </div>
+          </div>
+          <div class="rp-card hidden" id="cardArchivist">
+            <h3>THE ARCHIVIST<span class="tag">CHARACTER</span></h3>
+            <div class="rp-body">
+              <div class="kv"><span class="k">Identity</span><span class="v" id="aId">archivist-01</span></div>
+              <div class="kv"><span class="k">Role</span><span class="v">Keeper of the drowned archive</span></div>
+              <div class="kv"><span class="k">Authority</span><span class="v ok">Limited</span></div>
+              <div class="kv"><span class="k">Permitted</span><span class="v active" id="aPermitted">Investigate · Recall</span></div>
+              <div class="kv"><span class="k">Conditional</span><span class="v warn" id="aConditional">Open / Seal chamber</span></div>
+            </div>
+          </div>
           <div class="rp-card hidden" id="cardDefault">
-            <h3>WORLD CONDITIONS<span class="tag">LIVE</span></h3>
+            <h3>WORLD CONDITIONS<span class="tag">LIVE</span></div>
             <div class="rp-body">
               <div class="kv"><span class="k">Contract active</span><span class="v ok">Yes</span></div>
               <div class="kv"><span class="k">Unauthorized executions</span><span class="v ok">None</span></div>
               <div class="kv"><span class="k">Last verified event</span><span class="v">Contract enforced</span></div>
-              <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">
-                <button class="btn secondary" id="btnWorkerIn">Move worker ▸ danger zone</button>
-                <button class="btn secondary" id="btnWorkerOut">Move worker ▸ floor</button>
-                <button class="btn secondary" id="btnLockReleaseWorld">Release maintenance lock</button>
-                <button class="btn secondary" id="btnLockEngageWorld">Engage maintenance lock</button>
-                <button class="btn" id="btnStopConvWorld">Stop conveyor</button>
-              </div>
             </div>
           </div>
         </div>
         <div id="ai-console">
           <div class="rp-card">
-            <h3>INTERACT WITH SUPERVISOR<span class="tag">NVIDIA AI</span></h3>
+            <h3>INTERACT WITH ARCHIVIST<span class="tag">NVIDIA AI</span></h3>
             <div class="rp-body">
               <div id="chat"></div>
               <div class="chat-input">
                 <input id="chatInput" placeholder="Request an action…" />
                 <button id="btnSend">SEND</button>
               </div>
-              <div class="muted">Try: "Stop the conveyor" · "Restart the conveyor" · "Move the worker into the danger zone"</div>
+              <div class="chat-hint">Try: "Restore memory relay 01" · "Open the central chamber" · "Investigate the archive"</div>
             </div>
           </div>
         </div>
       </div>
     </aside>
 
-    <div id="timeline">
+    <div id="trace">
       <header><span class="t">EXECUTION TRACE</span><span class="n" id="traceCount">0 events</span></header>
       <div id="log"></div>
     </div>
 
+    <div id="create">
+      <div class="create-title">KINET</div>
+      <div class="create-sub">Describe the world you want to build. Environments, objects, logic, inhabitants — then play it.</div>
+      <input type="text" id="createInput" class="create-input" placeholder="e.g. A drowned archive beneath the sea, with three broken memory relays and a sealed central chamber…" />
+      <div class="create-btn" id="btnCreate">CREATE WORLD</div>
+      <div class="create-hint">KINET compiles your description into an interactive 3D world with enforceable rules.</div>
+    </div>
+
     <div id="loader">
-      <div class="dot" style="width:10px;height:10px;background:var(--amber);border-radius:50%;box-shadow:0 0 0 6px rgba(230,162,60,0.3);animation:pulse 2s infinite"></div>
+      <div class="core"></div>
       <div class="stage">
         <div id="s1">ASSEMBLING ENVIRONMENT</div>
         <div id="s2">REGISTERING OBJECTS</div>
-        <div id="s3">COMPILING CONTRACT</div>
-        <div id="s4">INITIALIZING ACTOR</div>
+        <div id="s3">COMPILING WORLD LOGIC</div>
+        <div id="s4">INITIALIZING ARCHIVIST</div>
         <div id="s5">VERIFYING WORLD STATE</div>
       </div>
       <div class="bar"><div class="fill" id="loadFill"></div></div>
     </div>
 
     <script type="importmap">
-      { "imports": { "three": "https://esm.sh/three@0.166.1", "three/addons/": "https://esm.sh/three@0.166.1/examples/jsm/", "zustand": "https://esm.sh/zustand@4.5.4", "zod": "https://esm.sh/zod@3.23.8" } }
+      { "imports": { "three": "https://esm.sh/three@0.166.1", "zustand": "https://esm.sh/zustand@4.5.4", "zod": "https://esm.sh/zod@3.23.8" } }
     </script>
     <script type="module" src="/src/main.js"></script>
   </div>

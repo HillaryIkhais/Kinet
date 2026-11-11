@@ -1,20 +1,22 @@
 import { create } from 'zustand';
-import { DEFAULT_CONTRACT } from './factory.js';
+import { DEFAULT_ARCHIVE_CONTRACT } from './archive.js';
 import { enforce } from './runtime.js';
 import { compileIntent } from './llm.js';
 
 const INITIAL_STATE = {
-  conveyorRunning: false,
-  workerInDangerZone: false,
-  maintenanceLockReleased: false,
-  warningActive: false,
-  maintenancePanelOpen: false,
+  relay01Restored: false,
+  relay02Restored: false,
+  relay03Restored: false,
+  chamberOpen: false,
+  conduit01Active: false,
+  conduit02Active: false,
+  conduit03Active: false,
 };
 
 export const useStore = create((set, get) => ({
   worldState: { ...INITIAL_STATE },
-  contract: DEFAULT_CONTRACT,
-  sceneSpec: DEFAULT_CONTRACT.scene,
+  contract: DEFAULT_ARCHIVE_CONTRACT,
+  sceneSpec: DEFAULT_ARCHIVE_CONTRACT.scene,
   receipts: [],
   messages: [],
   apiKey: localStorage.getItem('kinet_key') || '',
@@ -32,8 +34,8 @@ export const useStore = create((set, get) => ({
 
   regenerate: () => {
     set({
-      contract: DEFAULT_CONTRACT,
-      sceneSpec: DEFAULT_CONTRACT.scene,
+      contract: DEFAULT_ARCHIVE_CONTRACT,
+      sceneSpec: DEFAULT_ARCHIVE_CONTRACT.scene,
       worldState: { ...INITIAL_STATE },
       receipts: [],
       messages: [],
@@ -45,10 +47,14 @@ export const useStore = create((set, get) => ({
     let patch = {};
     let note = '';
     switch (kind) {
-      case 'worker_in': patch = { workerInDangerZone: true }; note = 'Worker moved into the danger zone.'; break;
-      case 'worker_out': patch = { workerInDangerZone: false }; note = 'Worker moved back to the factory floor.'; break;
-      case 'lock_release': patch = { maintenanceLockReleased: true }; note = 'Maintenance lock released.'; break;
-      case 'lock_engage': patch = { maintenanceLockReleased: false }; note = 'Maintenance lock engaged.'; break;
+      case 'relay_01_in': patch = { relay01Restored: true }; note = 'Memory relay 01 restored.'; break;
+      case 'relay_02_in': patch = { relay02Restored: true }; note = 'Memory relay 02 restored.'; break;
+      case 'relay_03_in': patch = { relay03Restored: true }; note = 'Memory relay 03 restored.'; break;
+      case 'relay_01_out': patch = { relay01Restored: false }; note = 'Memory relay 01 destabilised.'; break;
+      case 'relay_02_out': patch = { relay02Restored: false }; note = 'Memory relay 02 destabilised.'; break;
+      case 'relay_03_out': patch = { relay03Restored: false }; note = 'Memory relay 03 destabilised.'; break;
+      case 'chamber_open': patch = { chamberOpen: true }; note = 'Central chamber unsealed.'; break;
+      case 'chamber_seal': patch = { chamberOpen: false }; note = 'Central chamber sealed.'; break;
     }
     set((st) => ({
       worldState: { ...st.worldState, ...patch },
@@ -69,8 +75,6 @@ export const useStore = create((set, get) => ({
     }));
   },
 
-  // Action: callable via getState().chat(message). Returns the runtime receipt.
-  // State field `messages` holds the rendered transcript; `chat` is the function.
   chat: async (message) => {
     const msgs = Array.isArray(get().messages) ? get().messages : [];
     set({ messages: [...msgs, { role: 'user', text: message }], status: 'thinking' });
