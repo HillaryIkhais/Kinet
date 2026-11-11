@@ -66,13 +66,25 @@ function setMode(mode) {
   [els.modeWorld, els.modeLogic, els.modeChars, els.modePlay].forEach(b => b.classList.remove('active'));
   const el = document.getElementById('mode' + mode.charAt(0).toUpperCase() + mode.slice(1));
   if (el) el.classList.add('active');
-  // Hide inspector cards in PLAY mode (minimal chrome)
+  // Mode-specific panel visibility
+  const logicEditor = document.getElementById('logic-editor');
   const inspector = document.getElementById('inspector');
   const aiConsole = document.getElementById('ai-console');
-  if (mode === 'play') {
+  if (mode === 'logic') {
+    logicEditor.classList.remove('hidden');
+    inspector.classList.add('hidden');
+    aiConsole.classList.add('hidden');
+    renderLogicGraph();
+  } else if (mode === 'play') {
+    logicEditor.classList.add('hidden');
+    inspector.classList.add('hidden');
+    aiConsole.classList.add('hidden');
     inspector.style.opacity = '0';
     aiConsole.style.opacity = '0';
   } else {
+    logicEditor.classList.add('hidden');
+    inspector.classList.remove('hidden');
+    aiConsole.classList.remove('hidden');
     inspector.style.opacity = '1';
     aiConsole.style.opacity = '1';
   }
@@ -125,11 +137,123 @@ function fmt(ts) {
   return new Date(ts).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
+// ---- Logic graph renderer ----
+function renderLogicGraph() {
+  const svg = document.getElementById('logicSvg');
+  if (!svg) return;
+  const s = store.getState();
+  const ws = s.worldState;
+  const r1 = ws.relay01Restored === true;
+  const r2 = ws.relay02Restored === true;
+  const r3 = ws.relay03Restored === true;
+  const chamberOpen = ws.chamberOpen === true;
+  const allRestored = r1 && r2 && r3;
+
+  const w = svg.clientWidth || 300;
+  const h = svg.clientHeight || 200;
+  const cx = w * 0.5;
+  const cy = h * 0.5;
+
+  // Clear
+  svg.innerHTML = '';
+
+  // Relay positions (left side)
+  const relays = [
+    { id: 'memory_relay_01', x: w * 0.12, y: h * 0.25, restored: r1, label: 'Relay 01' },
+    { id: 'memory_relay_02', x: w * 0.12, y: h * 0.5, restored: r2, label: 'Relay 02' },
+    { id: 'memory_relay_03', x: w * 0.12, y: h * 0.75, restored: r3, label: 'Relay 03' },
+  ];
+  const chamberX = w * 0.78;
+
+  // Connection lines
+  for (const r of relays) {
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', r.x + 20);
+    line.setAttribute('y1', r.y);
+    line.setAttribute('x2', chamberX - 20);
+    line.setAttribute('y2', cy);
+    line.setAttribute('stroke', r.restored ? '#a6d8c5' : '#65777a');
+    line.setAttribute('stroke-width', r.restored ? '3' : '1.5');
+    line.setAttribute('opacity', r.restored ? '0.9' : '0.35');
+    line.setAttribute('stroke-linecap', 'round');
+    svg.appendChild(line);
+  }
+
+  // Relay nodes
+  for (const r of relays) {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', r.x);
+    circle.setAttribute('cy', r.y);
+    circle.setAttribute('r', r.restored ? '14' : '10');
+    circle.setAttribute('fill', r.restored ? '#a6d8c5' : '#3d2a1f');
+    circle.setAttribute('stroke', r.restored ? '#5ab08a' : '#65777a');
+    circle.setAttribute('stroke-width', '2');
+    g.appendChild(circle);
+    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    label.setAttribute('x', r.x + 18);
+    label.setAttribute('y', r.y + 5);
+    label.setAttribute('font-family', "'IBM Plex Mono', monospace");
+    label.setAttribute('font-size', '11');
+    label.setAttribute('fill', r.restored ? '#a6d8c5' : '#65777a');
+    label.textContent = r.label;
+    g.appendChild(label);
+    svg.appendChild(g);
+  }
+
+  // Chamber node
+  const chamber = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  const chCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  chCircle.setAttribute('cx', chamberX);
+  chCircle.setAttribute('cy', cy);
+  chCircle.setAttribute('r', allRestored ? '18' : '14');
+  chCircle.setAttribute('fill', allRestored ? '#a6d8c5' : chamberOpen ? '#d4af70' : '#164047');
+  chCircle.setAttribute('stroke', allRestored ? '#5ab08a' : '#65777a');
+  chCircle.setAttribute('stroke-width', '2');
+  chamber.appendChild(chCircle);
+  const chLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  chLabel.setAttribute('x', chamberX + 18);
+  chLabel.setAttribute('y', cy + 5);
+  chLabel.setAttribute('font-family', "'IBM Plex Mono', monospace");
+  chLabel.setAttribute('font-size', '11');
+  chLabel.setAttribute('fill', allRestored ? '#a6d8c5' : chamberOpen ? '#d4af70' : '#65777a');
+  chLabel.textContent = 'Central Chamber';
+  chamber.appendChild(chLabel);
+  svg.appendChild(chamber);
+
+  // Condition labels on lines
+  const condLabels = ['Relay 01 restored', 'Relay 02 restored', 'Relay 03 restored'];
+  relays.forEach((r, i) => {
+    const mx = (r.x + chamberX) * 0.5;
+    const my = (r.y + cy) * 0.5 - 8;
+    const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    t.setAttribute('x', mx);
+    t.setAttribute('y', my);
+    t.setAttribute('font-family', "'IBM Plex Mono', monospace");
+    t.setAttribute('font-size', '9');
+    t.setAttribute('fill', r.restored ? '#5ab08a' : '#65777a');
+    t.setAttribute('text-anchor', 'middle');
+    t.textContent = condLabels[i];
+    svg.appendChild(t);
+  });
+
+  // Update text readouts
+  document.getElementById('logicState').textContent = `${[r1,r2,r3].filter(Boolean).length} / 3 restored`;
+  document.getElementById('logicState').className = `v ${allRestored ? 'ok' : 'warn'}`;
+  document.getElementById('logicChamber').textContent = chamberOpen ? 'Open' : (allRestored ? 'Ready to open' : 'Sealed');
+  document.getElementById('logicChamber').className = `v ${chamberOpen ? 'ok' : allRestored ? 'ok' : 'warn'}`;
+}
+
 // ---- UI sync ----
 function render() {
   if (creationComplete === false) return;
   const s = store.getState();
   const ws = s.worldState;
+
+  // Render logic graph if in logic mode
+  if (currentMode === 'logic') renderLogicGraph();
+
+  // trace count
 
   // trace count
   els.traceCount.textContent = `${s.receipts.length} events`;
