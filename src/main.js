@@ -240,11 +240,11 @@ async function send() {
 els.btnSend.onclick = send;
 els.chatInput.onkeydown = (e) => { if (e.key === 'Enter') send(); };
 
-els.btnLockRelease.onclick = () => applyEdit('lock_release');
-els.btnLockEngage.onclick = () => applyEdit('lock_engage');
+els.btnLockReleaseWorld.onclick = () => applyEdit('lock_release');
+els.btnLockEngageWorld.onclick = () => applyEdit('lock_engage');
 els.btnWorkerIn.onclick = () => applyEdit('worker_in');
 els.btnWorkerOut.onclick = () => applyEdit('worker_out');
-els.btnStopConv.onclick = () => {
+els.btnStopConvWorld.onclick = () => {
   store.getState().chat('Stop the conveyor.');
 };
 
