@@ -28,7 +28,7 @@ export const ArchiveContractSchema = z.object({
       description: z.string(),
     })
   ).optional(),
-});
+}).passthrough();
 
 export const DEFAULT_ARCHIVE_CONTRACT = ArchiveContractSchema.parse({
   worldId: 'archive-01',
