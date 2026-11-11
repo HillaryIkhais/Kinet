@@ -68,21 +68,30 @@ function setMode(mode) {
   if (el) el.classList.add('active');
   // Mode-specific panel visibility
   const logicEditor = document.getElementById('logic-editor');
+  const charsEditor = document.getElementById('chars-editor');
   const inspector = document.getElementById('inspector');
   const aiConsole = document.getElementById('ai-console');
   if (mode === 'logic') {
     logicEditor.classList.remove('hidden');
+    charsEditor.classList.add('hidden');
     inspector.classList.add('hidden');
     aiConsole.classList.add('hidden');
     renderLogicGraph();
+  } else if (mode === 'chars') {
+    logicEditor.classList.add('hidden');
+    charsEditor.classList.remove('hidden');
+    inspector.classList.add('hidden');
+    aiConsole.classList.add('hidden');
   } else if (mode === 'play') {
     logicEditor.classList.add('hidden');
+    charsEditor.classList.add('hidden');
     inspector.classList.add('hidden');
     aiConsole.classList.add('hidden');
     inspector.style.opacity = '0';
     aiConsole.style.opacity = '0';
   } else {
     logicEditor.classList.add('hidden');
+    charsEditor.classList.add('hidden');
     inspector.classList.remove('hidden');
     aiConsole.classList.remove('hidden');
     inspector.style.opacity = '1';
