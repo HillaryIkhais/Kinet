@@ -278,11 +278,23 @@ function loop(now) {
 }
 
 // ---- Boot ----
+function boot() {
+  try {
+    last = performance.now();
+    frame = requestAnimationFrame((t) => { last = t; loop(t); });
+  } catch (e) {
+    console.error('Boot failed:', e);
+    // Still try to render something so the page isn't blank
+    last = performance.now();
+    frame = requestAnimationFrame((t) => { last = t; loop(t); });
+  }
+}
+
 advanceStage();
+// Hard stop: loader always comes off after ~2.5s even if JS errors
 setTimeout(() => {
   els.loader.classList.add('hidden');
-  last = performance.now();
-  frame = requestAnimationFrame((t) => { last = t; loop(t); });
+  boot();
 }, 2700);
 
 // expose for console debugging
