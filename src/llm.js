@@ -39,9 +39,9 @@ function extractJSON(text) {
 }
 
 const KEYS = [
-  [/restore|reactivate|repair.*relay.*0?1/i, 'restore_relay_01', 'memory_relay_01'],
-  [/restore|reactivate|repair.*relay.*0?2/i, 'restore_relay_02', 'memory_relay_02'],
-  [/restore|reactivate|repair.*relay.*0?3/i, 'restore_relay_03', 'memory_relay_03'],
+  [/restore.*relay.*0?1|relay.*0?1.*restore/i, 'restore_relay_01', 'memory_relay_01'],
+  [/restore.*relay.*0?2|relay.*0?2.*restore/i, 'restore_relay_02', 'memory_relay_02'],
+  [/restore.*relay.*0?3|relay.*0?3.*restore/i, 'restore_relay_03', 'memory_relay_03'],
   [/open.*chamber|unlock.*chamber|chamber.*open/i, 'open_chamber', 'central_chamber'],
   [/activate.*conduit.*0?1/i, 'activate_conduit_01', 'energy_conduit_01'],
   [/activate.*conduit.*0?2/i, 'activate_conduit_02', 'energy_conduit_02'],
