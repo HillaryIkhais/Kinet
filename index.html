@@ -217,6 +217,8 @@
               <div class="kv"><span class="k">Energy Flow</span><span class="v" id="rFlow">Inert</span></div>
               <div class="btn-group">
                 <button class="btn secondary" id="btnRestoreRelay">Restore Relay</button>
+                <button class="btn secondary" id="btnRelayToChamber">Move Relay ▸ Chamber</button>
+                <button class="btn secondary" id="btnRelayToHall">Move Relay ▸ Hall</button>
               </div>
             </div>
           </div>
@@ -248,6 +250,14 @@
               <div class="kv"><span class="k">Contract active</span><span class="v ok">Yes</span></div>
               <div class="kv"><span class="k">Unauthorized executions</span><span class="v ok">None</span></div>
               <div class="kv"><span class="k">Last verified event</span><span class="v">Contract enforced</span></div>
+            </div>
+          </div>
+          <div class="rp-card" id="cardPlayability">
+            <h3>PLAYABILITY CHECK<span class="tag" id="playTag">VERIFIED</span></h3>
+            <div class="rp-body">
+              <div class="kv"><span class="k">Status</span><span class="v ok" id="playStatus">Playable</span></div>
+              <div class="kv"><span class="k">Reachable zones</span><span class="v" id="playZones">Main hall</span></div>
+              <div id="playProblems" style="margin-top:8px;padding:8px;border-radius:6px;background:rgba(198,93,56,0.08);border:1px solid rgba(198,93,56,0.15);color:#c65d38;font-family:'IBM Plex Mono',monospace;font-size:0.68rem;display:none"></div>
             </div>
           </div>
         </div>

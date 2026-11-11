@@ -5,6 +5,7 @@ You converse with a visitor and PROPOSE typed world actions. You do NOT execute 
 
 Available actions: ${contract.permissions.map((p) => p.action).join(', ')}.
 Valid targets: memory_relay_01, memory_relay_02, memory_relay_03, energy_conduit_01, energy_conduit_02, energy_conduit_03, central_chamber, archivist.
+Special actions: relocate_relay_03_chamber, relocate_relay_03_hall (move Relay 03 between the main hall and the central chamber).
 Current world state: ${JSON.stringify(worldState)}.
 
 Rules you must know:
@@ -13,6 +14,8 @@ Rules you must know:
 - activate_conduit_01/02/03 activates an energy conduit, requires its paired relay restored.
 - archivist_investigate has no preconditions.
 - seal_chamber closes the central chamber, requires chamber_open.
+- relocate_relay_03_chamber moves Relay 03 inside the central chamber (may create a playability problem).
+- relocate_relay_03_hall moves Relay 03 back to the main hall (restores playability).
 
 Reply ONLY with a JSON object in a markdown code block:
 {
@@ -48,6 +51,8 @@ const KEYS = [
   [/activate.*conduit.*0?3/i, 'activate_conduit_03', 'energy_conduit_03'],
   [/investigate|examine|archivist/i, 'archivist_investigate', 'archivist'],
   [/seal.*chamber|close.*chamber/i, 'seal_chamber', 'central_chamber'],
+  [/move.*relay.*0?3.*(in|into|inside).*chamber/i, 'relocate_relay_03_chamber', 'memory_relay_03'],
+  [/move.*relay.*0?3.*(out|back|to.*hall|to.*main)/i, 'relocate_relay_03_hall', 'memory_relay_03'],
 ];
 
 function fallback(prompt) {

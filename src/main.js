@@ -337,6 +337,26 @@ function render() {
   els.rState.className = `v ${chamberOpen ? 'ok' : 'warn'}`;
   els.cProgress.textContent = `${restoredCount} / 3`;
 
+  // Playability check
+  const play = s.playability;
+  const playTag = document.getElementById('playTag');
+  const playStatus = document.getElementById('playStatus');
+  const playZones = document.getElementById('playZones');
+  const playProblems = document.getElementById('playProblems');
+  if (play) {
+    playTag.textContent = play.playable ? 'VERIFIED' : 'PROBLEM';
+    playTag.className = `tag ${play.playable ? 'ok' : 'warn'}`;
+    playStatus.textContent = play.playable ? 'Playable' : 'Playability problem';
+    playStatus.className = `v ${play.playable ? 'ok' : 'warn'}`;
+    playZones.textContent = play.reachableZones.join(', ');
+    if (play.problems.length) {
+      playProblems.style.display = 'block';
+      playProblems.textContent = play.problems.map(p => p.reason).join(' ');
+    } else {
+      playProblems.style.display = 'none';
+    }
+  }
+
   // HUD annotation
   let hudEl = els.hud.firstElementChild;
   if (!hudEl) {
@@ -433,9 +453,13 @@ function openChamber() {
 function wireActionButtons() {
   const r1Btn = document.getElementById('btnRestoreRelay');
   const openBtn = document.getElementById('btnOpenChamber');
+  const toChamber = document.getElementById('btnRelayToChamber');
+  const toHall = document.getElementById('btnRelayToHall');
   if (!r1Btn || !openBtn) return;
   r1Btn.onclick = () => restoreRelay(1);
   openBtn.onclick = () => openChamber();
+  if (toChamber) toChamber.onclick = () => store.getState().applyEdit('relocate_relay_03_chamber');
+  if (toHall) toHall.onclick = () => store.getState().applyEdit('relocate_relay_03_hall');
 }
 
 // ---- AI chat ----

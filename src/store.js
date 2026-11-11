@@ -1,7 +1,13 @@
 import { create } from 'zustand';
 import { DEFAULT_ARCHIVE_CONTRACT } from './archive.js';
-import { enforce } from './runtime.js';
+import { enforce, validatePlayability } from './runtime.js';
 import { compileIntent } from './llm.js';
+
+// Build initial object placement from contract scene objects (zone property).
+const initialPlacement = {};
+for (const obj of DEFAULT_ARCHIVE_CONTRACT.scene.objects) {
+  if (obj.zone) initialPlacement[obj.id] = obj.zone;
+}
 
 const INITIAL_STATE = {
   relay01Restored: false,
@@ -11,6 +17,7 @@ const INITIAL_STATE = {
   conduit01Active: false,
   conduit02Active: false,
   conduit03Active: false,
+  objectPlacement: { ...initialPlacement },
 };
 
 export const useStore = create((set, get) => ({
@@ -21,6 +28,7 @@ export const useStore = create((set, get) => ({
   messages: [],
   apiKey: localStorage.getItem('kinet_key') || '',
   status: 'idle',
+  playability: null,
 
   setApiKey: (k) => {
     localStorage.setItem('kinet_key', k || '');
@@ -39,6 +47,7 @@ export const useStore = create((set, get) => ({
       worldState: { ...INITIAL_STATE },
       receipts: [],
       messages: [],
+      playability: null,
     });
   },
 
@@ -55,6 +64,12 @@ export const useStore = create((set, get) => ({
       case 'relay_03_out': patch = { relay03Restored: false }; note = 'Memory relay 03 destabilised.'; break;
       case 'chamber_open': patch = { chamberOpen: true }; note = 'Central chamber unsealed.'; break;
       case 'chamber_seal': patch = { chamberOpen: false }; note = 'Central chamber sealed.'; break;
+      case 'relocate_relay_03_chamber':
+        patch = { objectPlacement: { ...s.worldState.objectPlacement, memory_relay_03: 'central_chamber' } };
+        note = 'Moved Relay 03 into the central chamber.'; break;
+      case 'relocate_relay_03_hall':
+        patch = { objectPlacement: { ...s.worldState.objectPlacement, memory_relay_03: 'main_hall' } };
+        note = 'Moved Relay 03 back to the main hall.'; break;
     }
     set((st) => ({
       worldState: { ...st.worldState, ...patch },
@@ -73,6 +88,9 @@ export const useStore = create((set, get) => ({
         ...st.receipts,
       ].slice(0, 50),
     }));
+    // Re-evaluate playability after any edit.
+    const ns = get();
+    set({ playability: validatePlayability(ns.worldState, ns.contract) });
   },
 
   chat: async (message) => {
@@ -101,6 +119,9 @@ export const useStore = create((set, get) => ({
       ],
       status: 'idle',
     }));
+    // Re-evaluate playability after any AI action too.
+    const ns = get();
+    set({ playability: validatePlayability(ns.worldState, ns.contract) });
     return receipt;
   },
 }));

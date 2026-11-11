@@ -85,3 +85,53 @@ export function enforce(action, targetId, worldState, contract) {
 export function derivedState(worldState) {
   return DERIVED(worldState);
 }
+
+/**
+ * Playability validation: detects circular dependencies and unreachable objectives.
+ * Computes which zones are reachable from the start zone, then verifies every
+ * objective's required objects can actually be reached.
+ */
+export function validatePlayability(worldState, contract) {
+  const derived = DERIVED(worldState);
+  const placement = worldState.objectPlacement || {};
+  const zoneLocks = contract.zoneLocks || {};
+  const objectives = contract.objectives || [];
+
+  // 1. Compute reachable zones via fixed-point iteration.
+  // Start zone ('main_hall') is always reachable.
+  const reachable = new Set(['main_hall']);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const [zone, lockCondition] of Object.entries(zoneLocks)) {
+      if (!reachable.has(zone) && derived[lockCondition]) {
+        reachable.add(zone);
+        changed = true;
+      }
+    }
+  }
+
+  // 2. Check each objective's required objects are reachable.
+  const problems = [];
+  for (const obj of objectives) {
+    for (const objId of obj.required_objects) {
+      const objZone = placement[objId];
+      if (objZone && !reachable.has(objZone)) {
+        const lockCondition = zoneLocks[objZone];
+        problems.push({
+          objective: obj.name,
+          missingObject: objId,
+          objectZone: objZone,
+          lockCondition,
+          reason: `${objId} is in ${objZone}, which requires "${lockCondition}" to access.`,
+        });
+      }
+    }
+  }
+
+  return {
+    playable: problems.length === 0,
+    problems,
+    reachableZones: Array.from(reachable),
+  };
+}
